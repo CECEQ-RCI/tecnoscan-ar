@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Stand TecnoScan</title>
+<style>
+  :root{
+    --bg:#0a0f14;
+    --surface:#111820;
+    --surface-2:#161f2a;
+    --border:#28374a;
+    --text:#e9f1f6;
+    --text-dim:#8fa3b8;
+    --accent:#4de8d4;
+    --accent-2:#ffb454;
+    --accent-3:#8fd0ff;
+    --font-display:'Unbounded','Segoe UI',sans-serif;
+    --font-body:'IBM Plex Sans','Segoe UI',sans-serif;
+    --font-mono:'IBM Plex Mono','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 18% -8%, rgba(77,232,212,.12), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(255,180,84,.08), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    padding-block:40px;
+  }
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding-inline:20px;
+    display:flex;
+    flex-direction:column;
+    gap:34px;
+  }
+
+  header{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .header-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .logo-badge{
+    background:#ffffff;
+    border-radius:12px;
+    padding:8px 14px;
+    display:flex;
+    align-items:center;
+    flex:none;
+  }
+  .logo-badge img{
+    height:44px;
+    width:auto;
+    display:block;
+  }
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:12px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px;height:7px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 8px var(--accent);
+  }
+  h1{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:clamp(34px,7vw,52px);
+    line-height:1.05;
+    margin:0;
+    text-wrap:balance;
+  }
+  h1 span{color:var(--accent);}
+  .lede{
+    font-size:16px;
+    line-height:1.6;
+    color:var(--text-dim);
+    max-width:56ch;
+    margin:0;
+  }
+
+  .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    font-family:var(--font-mono);
+    font-size:12px;
+  }
+  .meta-chip{
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:999px;
+    padding:6px 13px;
+    color:var(--text-dim);
+  }
+  .meta-chip b{color:var(--text);font-weight:500;}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:22px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:22px;
+    padding:26px;
+  }
+  @media(min-width:640px){
+    .stage{grid-template-columns:220px 1fr; align-items:center;}
+  }
+
+  .qr-frame{
+    position:relative;
+    width:100%;
+    max-width:220px;
+    aspect-ratio:1;
+    margin:0 auto;
+    background:#ffffff;
+    border-radius:14px;
+    padding:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .qr-frame span{
+    position:absolute;
+    width:22px;height:22px;
+    border:2.5px solid var(--accent);
+  }
+  .qr-frame .tl{top:-8px;left:-8px;border-right:none;border-bottom:none;border-radius:6px 0 0 0;}
+  .qr-frame .tr{top:-8px;right:-8px;border-left:none;border-bottom:none;border-radius:0 6px 0 0;}
+  .qr-frame .bl{bottom:-8px;left:-8px;border-right:none;border-top:none;border-radius:0 0 0 6px;}
+  .qr-frame .br{bottom:-8px;right:-8px;border-left:none;border-top:none;border-radius:0 0 6px 0;}
+  #qrcode{line-height:0;}
+  #qrcode img{display:block;image-rendering:pixelated;}
+
+  .steps{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .step{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .step .num{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--accent);
+    border:1px solid var(--border);
+    border-radius:50%;
+    width:26px;height:26px;
+    flex:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .step h3{
+    font-family:var(--font-body);
+    font-size:15px;
+    font-weight:600;
+    margin:0 0 3px;
+  }
+  .step p{
+    font-size:13.5px;
+    line-height:1.5;
+    color:var(--text-dim);
+    margin:0;
+  }
+
+  .topics{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+  }
+  .topic-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .topic-glyph{
+    width:38px;height:38px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+  }
+  .topic-card:nth-child(1) .topic-glyph{color:var(--accent);}
+  .topic-card:nth-child(2) .topic-glyph{color:var(--accent-2);}
+  .topic-card:nth-child(3) .topic-glyph{color:var(--accent-3);}
+  .topic-card h4{
+    font-family:var(--font-body);
+    font-size:13.5px;
+    font-weight:600;
+    margin:0;
+  }
+  .topic-card p{
+    font-size:11.5px;
+    line-height:1.4;
+    color:var(--text-dim);
+    margin:0;
+  }
+
+  footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--text-dim);
+    letter-spacing:.03em;
+  }
+  footer b{color:var(--text);font-weight:500;}
+
+  @media (max-width:520px){
+    .topics{grid-template-columns:1fr;}
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<div class="wrap">
+  <header>
+    <div class="header-top">
+      <div class="eyebrow">Stand de Inovación y tecnología · Feria STEM</div>
+      <div class="logo-badge"><img src="logo.png" alt="Centro Educativo y Cultural del Estado de Querétaro " Manuel Gómez Morin" "></div>
+    </div>
+    <h1>Escaneá el código.<br>Mirá la tecnología <span>en AR</span>.</h1>
+    <p class="lede">Este stand muestra tres piezas de tecnología como hologramas en realidad aumentada: una red neuronal, un microchip y un brazo robótico. Todo corre desde el navegador del celular, sin instalar ninguna aplicación.</p>
+    <div class="meta-row">
+      <div class="meta-chip">Proyecto: <b>[Nombre del equipo]</b></div>
+      <div class="meta-chip">Categoría: <b>Tecnología</b></div>
+      <div class="meta-chip">Piezas: <b>3</b></div>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="qr-frame">
+      <span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span>
+      <div id="qrcode"></div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div><h3>Escaneá el QR</h3><p>Con la cámara del celular, sin necesidad de ninguna app extra.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div><h3>Activá la cámara AR</h3><p>El navegador va a pedir permiso de cámara: aceptalo para ver los hologramas superpuestos.</p></div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div><h3>Explorá y girá</h3><p>Deslizá el dedo sobre la pantalla para rotar cada modelo y usá las flechas para cambiar de pieza.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="topics">
+    <div class="topic-card">
+      <div class="topic-glyph">◆</div>
+      <h4>Red neuronal</h4>
+      <p>Capas de nodos conectados que aprenden ajustando sus pesos.</p>
+    </div>
+    <div class="topic-card">
+      <div class="topic-glyph">▣</div>
+      <h4>Microchip</h4>
+      <p>Miles de millones de transistores en unos milímetros de silicio.</p>
+    </div>
+    <div class="topic-card">
+      <div class="topic-glyph">✦</div>
+      <h4>Brazo robótico</h4>
+      <p>Articulaciones con motores propios para movimientos precisos.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>Feria de Ciencias · <b>Centro Educativo y Cultural del Estado Gómez Morín</b></span>
+    <span>TecnoScan AR</span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  new QRCode(document.getElementById("qrcode"), {
+    text: "https://claudiaac.github.io/tecnoscan-ar/",
+    width: 192,
+    height: 192,
+    colorDark: "#0a0f14",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
+</script>
+
+</body>
+</html>
