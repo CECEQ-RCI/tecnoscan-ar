@@ -46,6 +46,8 @@
   #scene-canvas{
     position:fixed;
     inset:0;
+    width:100%;
+    height:100%;
     z-index:1;
     touch-action:none;
   }
@@ -288,7 +290,7 @@
 
   .badge-nocam{
     position:fixed;
-    top:max(16px, env(safe-area-inset-top));
+    top:max(60px, calc(env(safe-area-inset-top) + 44px));
     left:50%;
     transform:translateX(-50%);
     z-index:3;
@@ -816,14 +818,24 @@
   function fitCamera(){
     var g = groups[current];
     if(!g) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    var top = 84, bottom = h * 0.55;
+    var card = document.querySelector(".info-card");
+    var bar = document.querySelector(".hud-top");
+    if(card && !document.getElementById("hud").hidden){
+      var cr = card.getBoundingClientRect();
+      if(cr.height > 0) bottom = cr.top - 8;
+      if(bar){ var br = bar.getBoundingClientRect(); if(br.height > 0) top = br.bottom + 8; }
+    }
+    var freeH = Math.max(bottom - top, h * 0.25);
+    var centerY = top + freeH/2;
     var tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
-    var fitH = g.userData.fitH * 1.45;
-    var zH = (fitH/2) / tanV;
-    var zW = (g.userData.fitR * 0.85) / (tanV * camera.aspect);
-    var z = Math.max(zH, zW) + g.userData.fitR * 0.6;
-    var shift = fitH * 0.09;
-    camera.position.set(0, -shift, z);
-    camera.lookAt(0, -shift, 0);
+    var zH = (g.userData.fitH/2) / tanV * (h / freeH);
+    var zW = (g.userData.fitR * 0.9) / (tanV * camera.aspect);
+    var z = Math.max(zH, zW) + g.userData.fitR * 0.5;
+    camera.position.set(0, 0, z);
+    camera.lookAt(0, 0, 0);
+    camera.setViewOffset(w, h, 0, -(centerY - h/2), w, h);
   }
 
   function resize(){
@@ -850,6 +862,7 @@
       d.className = 'dot' + (idx===i ? ' active' : '');
       dots.appendChild(d);
     });
+    fitCamera();
   }
   showTopic(0);
   resize();
@@ -910,6 +923,7 @@
     hud.hidden = false;
     veil.hidden = false;
     if(!withCamera){ badgeNoCam.hidden = false; }
+    fitCamera();
   }
 
   document.getElementById('btn-cam').addEventListener('click', function(){
