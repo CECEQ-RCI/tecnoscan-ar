@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reto TecnoScan</title>
+<title>Expedición TecnoScan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -132,6 +132,21 @@
   .souvenir .code{font-family:var(--font-mono);font-size:26px;letter-spacing:.14em;font-weight:500;color:var(--gold);}
   .souvenir p{margin:0;font-size:13.5px;line-height:1.5;color:var(--text-dim);}
   .stats{display:flex;flex-wrap:wrap;gap:10px;}
+  .cat{display:inline-flex;align-items:center;gap:8px;}
+  .cat i{font-style:normal;font-size:15px;}
+  .badges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .badge{border:1.5px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center;background:var(--bg);opacity:.45;}
+  .badge .g{font-size:26px;line-height:1;}
+  .badge b{font-size:12px;font-weight:600;line-height:1.25;}
+  .badge small{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);}
+  .badge.on{opacity:1;border-color:var(--gold);background:rgba(255,180,84,.07);}
+  .badge.on.full{box-shadow:0 0 18px rgba(255,180,84,.35);}
+  @media(max-width:420px){.badges{grid-template-columns:repeat(2,1fr);}}
+  .msg{font-size:13.5px;margin:0;}
+  .msg.ok{color:var(--good);}
+  .msg.bad{color:var(--bad);}
+  .foot-link{align-self:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);background:none;border:0;cursor:pointer;text-decoration:underline;padding:6px;}
+  .board.big li{font-size:18px;padding:13px 14px;}
 </style>
 </head>
 <body>
@@ -139,30 +154,31 @@
   <div class="topbar">
     <div class="brand">
       <div class="eyebrow">TecnoScan · Pabellón STEAM</div>
-      <div class="name">Reto Tecnológico</div>
+      <div class="name">Expedición STEM+</div>
     </div>
     <a class="link-ar" href="index.html">Ver hologramas AR</a>
   </div>
 
   <!-- INICIO -->
   <section id="s-start" style="display:flex;flex-direction:column;gap:18px;">
-    <h1>Demuestra cuánto sabes de <span>tecnología</span></h1>
-    <p class="lede">8 preguntas, 20 segundos cada una. Entre más rápido aciertes, más puntos ganas, y las rachas suman bonos. Al terminar recibes tu código para el souvenir del pabellón.</p>
+    <h1>Descifra los <span>artefactos</span> del territorio digital</h1>
+    <p class="lede">Tu equipo es una expedición STEM+: cada respuesta correcta desbloquea una insignia de los artefactos que viste en realidad aumentada. 8 preguntas de 20 segundos; entre más rápido aciertan, más puntos suman, y las rachas dan bonos.</p>
     <div class="panel">
-      <label class="label" for="nick">Tu apodo</label>
-      <input type="text" id="nick" maxlength="14" autocomplete="off" placeholder="Ej. Robot-42">
+      <label class="label" for="nick">Nombre de tu equipo</label>
+      <input type="text" id="nick" maxlength="14" autocomplete="off" placeholder="Ej. Los Exploradores">
       <div class="label">Elige tu nivel</div>
       <div class="levels" id="levels">
-        <button type="button" class="level" data-lv="0" aria-pressed="true"><span class="shape" style="color:var(--c-a)">●</span><b>Explorador</b><small>Niñas y niños</small></button>
-        <button type="button" class="level" data-lv="1" aria-pressed="false"><span class="shape" style="color:var(--c-b)">■</span><b>Creador</b><small>Jóvenes</small></button>
-        <button type="button" class="level" data-lv="2" aria-pressed="false"><span class="shape" style="color:var(--c-c)">⬢</span><b>Experto</b><small>Adultos</small></button>
+        <button type="button" class="level" data-lv="0" aria-pressed="false"><span class="shape" style="color:var(--c-a)">●</span><b>Explorador</b><small>Primaria y secundaria</small></button>
+        <button type="button" class="level" data-lv="1" aria-pressed="true"><span class="shape" style="color:var(--c-b)">■</span><b>Creador</b><small>Media superior</small></button>
+        <button type="button" class="level" data-lv="2" aria-pressed="false"><span class="shape" style="color:var(--c-c)">⬢</span><b>Experto</b><small>Docentes y adultos</small></button>
       </div>
-      <button type="button" class="btn btn-primary" id="btn-start">Comenzar reto</button>
+      <button type="button" class="btn btn-primary" id="btn-start">Comenzar expedición</button>
     </div>
     <div class="panel">
       <div class="label">Mejores puntajes en este equipo</div>
       <ol class="board" id="board-start"></ol>
     </div>
+    <button type="button" class="foot-link" id="btn-guia">Modo guía · marcador de ronda</button>
   </section>
 
   <!-- PREGUNTA -->
@@ -173,12 +189,35 @@
       <span class="chip">Puntos <b id="q-score">0</b></span>
     </div>
     <div class="timer" id="timer" aria-hidden="true"><i id="timer-bar"></i></div>
+    <div class="label cat" id="q-cat"></div>
     <h2 class="qtext" id="q-text"></h2>
     <div class="answers" id="answers"></div>
     <div class="fb" id="fb" hidden>
       <h3 id="fb-title"></h3>
       <p id="fb-fact"></p>
       <button type="button" class="btn btn-primary" id="btn-next">Siguiente</button>
+    </div>
+  </section>
+
+  <!-- GUÍA -->
+  <section id="s-guia" hidden style="display:flex;flex-direction:column;gap:18px;">
+    <h1>Marcador de <span>ronda</span></h1>
+    <p class="lede">Cada equipo te muestra su certificado. Escribe su nombre y el código para registrar el puntaje: si no coinciden, el código no es válido.</p>
+    <div class="panel">
+      <label class="label" for="m-name">Nombre del equipo</label>
+      <input type="text" id="m-name" maxlength="14" autocomplete="off">
+      <label class="label" for="m-code">Código del certificado</label>
+      <input type="text" id="m-code" maxlength="12" autocomplete="off" placeholder="TS-0000-000">
+      <button type="button" class="btn btn-primary" id="btn-reg">Registrar equipo</button>
+      <p class="msg" id="m-msg" hidden></p>
+    </div>
+    <div class="panel">
+      <div class="label">Clasificación de la ronda</div>
+      <ol class="board big" id="board-round"></ol>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" id="btn-newround">Nueva ronda</button>
+      <button type="button" class="btn btn-ghost" id="btn-exitguia">Volver al reto</button>
     </div>
   </section>
 
@@ -193,11 +232,15 @@
       <span class="chip">Mejor racha <b id="end-streak">0</b></span>
       <span class="chip" id="end-level"></span>
     </div>
+    <div class="panel">
+      <div class="label">Insignias de la bitácora</div>
+      <div class="badges" id="badges"></div>
+    </div>
     <div class="souvenir">
-      <div class="label">Tu código de souvenir</div>
+      <div class="label">Certificado · Explorador/a STEM+</div>
       <div class="code" id="end-code">TS-00000</div>
       <p id="end-when"></p>
-      <p>Muestra esta pantalla en el módulo del pabellón para recibir tu souvenir.</p>
+      <p>Muestra esta pantalla al guía de la expedición para registrar tu puntaje y recibir tu souvenir.</p>
     </div>
     <div class="panel">
       <div class="label">Mejores puntajes en este equipo</div>
@@ -220,45 +263,47 @@
 
   var BANK = [
     [
-      {q:'¿Qué parte de una computadora funciona como su “cerebro”?', a:['El procesador (microchip)','El teclado','La pantalla','El ratón'], f:'El procesador es un microchip que ejecuta las instrucciones de todos los programas.'},
-      {q:'¿Qué necesita un robot para poder moverse?', a:['Motores','Globos','Espejos','Cuerdas de guitarra'], f:'Cada articulación de un brazo robótico tiene su propio motor.'},
-      {q:'¿Qué significa la sigla QR?', a:['Respuesta rápida (Quick Response)','Queso rojo','Quitar reloj','Quinta ruta'], f:'El código QR se inventó en Japón en 1994 para rastrear piezas de autos.'},
-      {q:'¿Qué hace la realidad aumentada?', a:['Agrega objetos digitales al mundo real que ves con la cámara','Apaga el celular','Hace crecer las plantas','Cambia el clima'], f:'Es justo lo que viste en los hologramas de TecnoScan.'},
-      {q:'¿Con qué escaneas normalmente un código QR?', a:['La cámara del celular','El microondas','El refrigerador','La regadera'], f:'Casi todos los celulares modernos leen QR directamente desde la cámara.'},
-      {q:'Un microchip está hecho principalmente de…', a:['Silicio','Madera','Papel','Azúcar'], f:'El silicio es un material semiconductor: la base de casi todos los chips.'},
-      {q:'¿Qué máquina puede repetir tareas como armar autos en una fábrica?', a:['Un brazo robótico','Un paraguas','Una cuchara','Una almohada'], f:'Los brazos robóticos repiten movimientos con precisión de milímetros.'},
-      {q:'¿Qué necesita una red neuronal artificial para aprender?', a:['Ejemplos (datos)','Bloqueador solar','Gasolina','Pegamento'], f:'Aprende ajustando sus conexiones a partir de muchos ejemplos.'}
+      {c:1,q:'¿Qué parte de una computadora funciona como su “cerebro”?', a:['El procesador (microchip)','El teclado','La pantalla','El ratón'], f:'El procesador es un microchip que ejecuta las instrucciones de todos los programas.'},
+      {c:2,q:'¿Qué necesita un robot para poder moverse?', a:['Motores','Globos','Espejos','Cuerdas de guitarra'], f:'Cada articulación de un brazo robótico tiene su propio motor.'},
+      {c:3,q:'¿Qué significa la sigla QR?', a:['Respuesta rápida (Quick Response)','Queso rojo','Quitar reloj','Quinta ruta'], f:'El código QR se inventó en Japón en 1994 para rastrear piezas de autos.'},
+      {c:3,q:'¿Qué hace la realidad aumentada?', a:['Agrega objetos digitales al mundo real que ves con la cámara','Apaga el celular','Hace crecer las plantas','Cambia el clima'], f:'Es justo lo que viste en los hologramas de TecnoScan.'},
+      {c:0,q:'Las redes neuronales artificiales se inspiran en…', a:['Las neuronas del cerebro','Los relojes de arena','Los volcanes','Las mareas'], f:'Copian de forma simplificada cómo se conectan y transmiten señales las neuronas.'},
+      {c:1,q:'Un microchip está hecho principalmente de…', a:['Silicio','Madera','Papel','Azúcar'], f:'El silicio es un material semiconductor: la base de casi todos los chips.'},
+      {c:2,q:'¿Qué máquina puede repetir tareas como armar autos en una fábrica?', a:['Un brazo robótico','Un paraguas','Una cuchara','Una almohada'], f:'Los brazos robóticos repiten movimientos con precisión de milímetros.'},
+      {c:0,q:'¿Qué necesita una red neuronal artificial para aprender?', a:['Ejemplos (datos)','Bloqueador solar','Gasolina','Pegamento'], f:'Aprende ajustando sus conexiones a partir de muchos ejemplos.'}
     ],
     [
-      {q:'En una red neuronal, los “pesos” sirven para…', a:['Indicar qué tanta importancia tiene cada conexión','Medir cuánto pesa el chip','Guardar contraseñas','Enfriar el procesador'], f:'Entrenar una red es ir ajustando esos pesos hasta que acierta.'},
-      {q:'¿Qué es un “grado de libertad” en un brazo robótico?', a:['Cada movimiento independiente que puede hacer una articulación','Cada kilo que puede cargar','Cada motor de reserva','Cada cable del brazo'], f:'Un brazo industrial típico tiene 6 grados de libertad.'},
-      {q:'Un transistor funciona principalmente como…', a:['Un interruptor electrónico','Una batería','Una antena','Una pantalla'], f:'Miles de millones de transistores-interruptor forman un procesador.'},
-      {q:'¿Qué lenguaje usan las computadoras internamente?', a:['Binario (0 y 1)','Morse','Latín','Braille'], f:'Todo, textos, fotos y videos, se guarda como secuencias de ceros y unos.'},
-      {q:'La realidad aumentada se diferencia de la virtual porque…', a:['Superpone lo digital al mundo real, sin reemplazarlo','Necesita siempre visores cerrados','No usa cámara','Solo funciona sin internet'], f:'La virtual te mete en un mundo totalmente digital; la aumentada lo mezcla con el tuyo.'},
-      {q:'¿Qué significa la sigla IA?', a:['Inteligencia Artificial','Internet Avanzado','Interfaz Analógica','Impulso Alterno'], f:'Las redes neuronales son una de las técnicas más usadas de la IA.'},
-      {q:'La frecuencia de un procesador, medida en GHz, indica…', a:['Cuántos ciclos por segundo realiza (miles de millones)','Su peso','Su temperatura','El tamaño de la pantalla'], f:'3 GHz significa unos 3 mil millones de ciclos cada segundo.'},
-      {q:'¿Qué sensor usa un celular para detectar que lo giras?', a:['Giroscopio','Altavoz','Batería','Antena de TV'], f:'El giroscopio y el acelerómetro hacen que la AR siga tus movimientos.'}
+      {c:0,q:'En una red neuronal, los “pesos” sirven para…', a:['Indicar qué tanta importancia tiene cada conexión','Medir cuánto pesa el chip','Guardar contraseñas','Enfriar el procesador'], f:'Entrenar una red es ir ajustando esos pesos hasta que acierta.'},
+      {c:2,q:'¿Qué es un “grado de libertad” en un brazo robótico?', a:['Cada movimiento independiente que puede hacer una articulación','Cada kilo que puede cargar','Cada motor de reserva','Cada cable del brazo'], f:'Un brazo industrial típico tiene 6 grados de libertad.'},
+      {c:1,q:'Un transistor funciona principalmente como…', a:['Un interruptor electrónico','Una batería','Una antena','Una pantalla'], f:'Miles de millones de transistores-interruptor forman un procesador.'},
+      {c:2,q:'¿Qué sensor le indica a un robot en qué ángulo está una articulación?', a:['Un encoder','Un micrófono','Un altavoz','Una cámara de fotos'], f:'El encoder mide cuánto ha girado el eje del motor, y así el brazo sabe dónde está.'},
+      {c:3,q:'La realidad aumentada se diferencia de la virtual porque…', a:['Superpone lo digital al mundo real, sin reemplazarlo','Necesita siempre visores cerrados','No usa cámara','Solo funciona sin internet'], f:'La virtual te mete en un mundo totalmente digital; la aumentada lo mezcla con el tuyo.'},
+      {c:0,q:'¿Qué significa la sigla IA?', a:['Inteligencia Artificial','Internet Avanzado','Interfaz Analógica','Impulso Alterno'], f:'Las redes neuronales son una de las técnicas más usadas de la IA.'},
+      {c:1,q:'La frecuencia de un procesador, medida en GHz, indica…', a:['Cuántos ciclos por segundo realiza (miles de millones)','Su peso','Su temperatura','El tamaño de la pantalla'], f:'3 GHz significa unos 3 mil millones de ciclos cada segundo.'},
+      {c:3,q:'¿Qué sensor usa un celular para detectar que lo giras?', a:['Giroscopio','Altavoz','Batería','Antena de TV'], f:'El giroscopio y el acelerómetro hacen que la AR siga tus movimientos.'}
     ],
     [
-      {q:'Un código QR puede leerse aunque esté algo dañado gracias a…', a:['La corrección de errores (Reed-Solomon)','Una segunda cámara','Una tinta especial','La conexión a internet'], f:'Puede recuperar entre 7 % y 30 % de datos perdidos, según el nivel elegido.'},
-      {q:'En aprendizaje automático, el “sobreajuste” (overfitting) es…', a:['Que el modelo memoriza el entrenamiento y generaliza mal','Que se calienta la GPU','Que tiene demasiadas capas','Que usa muy poca memoria'], f:'Por eso se evalúa con datos que el modelo nunca vio.'},
-      {q:'La “Ley de Moore” observó que el número de transistores en un chip…', a:['Se duplica aproximadamente cada dos años','Se reduce a la mitad cada año','Se mantiene constante','Crece 1 % por década'], f:'Es una observación de 1965 que guió la industria por décadas.'},
-      {q:'En robótica, la cinemática inversa sirve para…', a:['Calcular los ángulos de las articulaciones para alcanzar una posición','Medir la batería','Programar el color','Reducir el ruido del motor'], f:'Dice al brazo cómo doblar cada junta para que la pinza llegue a un punto.'},
-      {q:'¿Por qué la cámara en una página web requiere HTTPS?', a:['El navegador solo permite la cámara en contextos seguros','Es más rápido','Lo exige el fabricante del sensor','Gasta menos batería'], f:'Por eso este pabellón usa una dirección segura para la AR.'},
-      {q:'Una GPU acelera el entrenamiento de redes neuronales porque…', a:['Realiza muchísimas operaciones en paralelo','Tiene más pantallas','Es más barata','Guarda más archivos'], f:'Entrenar una red es multiplicar enormes matrices, ideal para el paralelismo.'},
-      {q:'¿Qué es un “gemelo digital”?', a:['Un modelo virtual que replica un objeto o proceso físico','Un clon de un usuario','Un robot con dos brazos','Un chip doble'], f:'Se usa para simular fábricas, motores o ciudades antes de intervenirlas.'},
-      {q:'Aproximadamente, ¿cuántos transistores tiene un procesador moderno?', a:['Miles de millones','Miles','Cientos','Unos 50'], f:'Los chips actuales superan los 10 000 millones de transistores.'}
+      {c:3,q:'Un código QR puede leerse aunque esté algo dañado gracias a…', a:['La corrección de errores (Reed-Solomon)','Una segunda cámara','Una tinta especial','La conexión a internet'], f:'Puede recuperar entre 7 % y 30 % de datos perdidos, según el nivel elegido.'},
+      {c:0,q:'En aprendizaje automático, el “sobreajuste” (overfitting) es…', a:['Que el modelo memoriza el entrenamiento y generaliza mal','Que se calienta la GPU','Que tiene demasiadas capas','Que usa muy poca memoria'], f:'Por eso se evalúa con datos que el modelo nunca vio.'},
+      {c:1,q:'La “Ley de Moore” observó que el número de transistores en un chip…', a:['Se duplica aproximadamente cada dos años','Se reduce a la mitad cada año','Se mantiene constante','Crece 1 % por década'], f:'Es una observación de 1965 que guió la industria por décadas.'},
+      {c:2,q:'En robótica, la cinemática inversa sirve para…', a:['Calcular los ángulos de las articulaciones para alcanzar una posición','Medir la batería','Programar el color','Reducir el ruido del motor'], f:'Dice al brazo cómo doblar cada junta para que la pinza llegue a un punto.'},
+      {c:3,q:'¿Por qué la cámara en una página web requiere HTTPS?', a:['El navegador solo permite la cámara en contextos seguros','Es más rápido','Lo exige el fabricante del sensor','Gasta menos batería'], f:'Por eso este pabellón usa una dirección segura para la AR.'},
+      {c:0,q:'Una GPU acelera el entrenamiento de redes neuronales porque…', a:['Realiza muchísimas operaciones en paralelo','Tiene más pantallas','Es más barata','Guarda más archivos'], f:'Entrenar una red es multiplicar enormes matrices, ideal para el paralelismo.'},
+      {c:2,q:'¿Qué es un “gemelo digital”?', a:['Un modelo virtual que replica un objeto o proceso físico','Un clon de un usuario','Un robot con dos brazos','Un chip doble'], f:'Se usa para simular fábricas, motores o ciudades antes de intervenirlas.'},
+      {c:1,q:'Aproximadamente, ¿cuántos transistores tiene un procesador moderno?', a:['Miles de millones','Miles','Cientos','Unos 50'], f:'Los chips actuales superan los 10 000 millones de transistores.'}
     ]
   ];
 
   var $ = function(id){ return document.getElementById(id); };
-  var sStart = $('s-start'), sQ = $('s-q'), sEnd = $('s-end');
-  var level = 0, nick = '', questions = [], idx = 0, score = 0, streak = 0, bestStreak = 0, okCount = 0;
+  var sStart = $('s-start'), sQ = $('s-q'), sEnd = $('s-end'), sGuia = $('s-guia');
+  var CATS = [{n:'Red neuronal', g:'●', c:'var(--c-a)'},{n:'Microchip', g:'■', c:'var(--c-b)'},{n:'Brazo robótico', g:'⬢', c:'var(--c-c)'},{n:'QR y realidad aumentada', g:'▲', c:'var(--c-d)'}];
+  var catOk = [0,0,0,0], catTot = [0,0,0,0];
+  var level = 1, nick = '', questions = [], idx = 0, score = 0, streak = 0, bestStreak = 0, okCount = 0;
   var qStart = 0, raf = 0, locked = false, cur = null;
   var kiosk = /[?&]kiosco/.test(location.search);
   var KEY = 'tecnoscan_ranking_v1';
 
-  function show(el){ [sStart, sQ, sEnd].forEach(function(s){ s.hidden = (s !== el); }); window.scrollTo(0,0); }
+  function show(el){ [sStart, sQ, sEnd, sGuia].forEach(function(s){ s.hidden = (s !== el); }); window.scrollTo(0,0); }
   function shuffle(a){ a = a.slice(); for(var i=a.length-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
 
@@ -283,9 +328,9 @@
   }
 
   function start(){
-    nick = ($('nick').value || '').trim() || ('Robot-' + (10 + Math.floor(Math.random()*90)));
+    nick = ($('nick').value || '').trim() || ('Equipo-' + (10 + Math.floor(Math.random()*90)));
     questions = shuffle(BANK[level]);
-    idx = 0; score = 0; streak = 0; bestStreak = 0; okCount = 0;
+    idx = 0; score = 0; streak = 0; bestStreak = 0; okCount = 0; catOk = [0,0,0,0]; catTot = [0,0,0,0];
     $('q-total').textContent = questions.length;
     show(sQ);
     nextQuestion();
@@ -295,7 +340,9 @@
     if(idx >= questions.length){ finish(); return; }
     var q = questions[idx];
     var opts = shuffle(q.a.map(function(t, i){ return {t:t, ok:i === 0}; }));
-    cur = {opts:opts, fact:q.f};
+    cur = {opts:opts, fact:q.f, c:q.c};
+    var ct = CATS[q.c];
+    $('q-cat').innerHTML = '<i style="color:' + ct.c + '">' + ct.g + '</i>Artefacto · ' + ct.n;
     $('q-num').textContent = idx + 1;
     $('q-score').textContent = score;
     $('q-text').textContent = q.q;
@@ -337,6 +384,7 @@
     var elapsed = Math.min(T, (performance.now() - qStart)/1000);
     var right = cur.opts.findIndex(function(o){ return o.ok; });
     var ok = i === right;
+    catTot[cur.c]++; if(ok) catOk[cur.c]++;
     var gained = 0;
     if(ok){
       streak++; okCount++; bestStreak = Math.max(bestStreak, streak);
@@ -361,11 +409,9 @@
     $('btn-next').focus({preventScroll:true});
   }
 
-  function makeCode(name, sc, ts){
-    var h = 7, s = name + '|' + sc + '|' + ts;
-    for(var i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
-    return 'TS-' + ('00000' + h.toString(36).toUpperCase()).slice(-5);
-  }
+  function hash(str){ var h = 7; for(var i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; } return h; }
+  function chk(name, sc){ return ('000' + hash(name.trim().toLowerCase() + '|' + sc + '|tsc').toString(36).toUpperCase()).slice(-3); }
+  function makeCode(name, sc){ return 'TS-' + ('0000' + sc.toString(36).toUpperCase()).slice(-4) + '-' + chk(name, sc); }
 
   function finish(){
     var ts = Date.now();
@@ -374,13 +420,17 @@
     list.sort(function(a,b){ return b.score - a.score; });
     saveRank(list.slice(0, 50));
     var pct = okCount / questions.length;
-    $('end-title').textContent = pct >= 0.85 ? 'Mente maestra, ' + nick : pct >= 0.55 ? 'Inventor en marcha, ' + nick : 'Explorador curioso, ' + nick;
+    $('end-title').textContent = 'Expedición completada · ' + nick;
     $('end-score').textContent = score;
     $('end-ok').textContent = okCount;
     $('end-total').textContent = questions.length;
     $('end-streak').textContent = bestStreak;
     $('end-level').textContent = 'Nivel ' + LEVELS[level];
-    $('end-code').textContent = makeCode(nick, score, ts);
+    $('end-code').textContent = makeCode(nick, score);
+    $('badges').innerHTML = CATS.map(function(c, k){
+      var full = catTot[k] > 0 && catOk[k] === catTot[k], on = catOk[k] > 0;
+      return '<div class="badge' + (on ? ' on' : '') + (full ? ' full' : '') + '"><span class="g" style="color:' + c.c + '">' + c.g + '</span><b>' + c.n + '</b><small>' + (full ? 'Oro' : on ? 'Plata' : 'Por descubrir') + '</small></div>';
+    }).join('');
     $('end-when').textContent = nick + ' · ' + new Date(ts).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'});
     renderBoard($('board-end'), ts);
     show(sEnd);
@@ -393,12 +443,39 @@
     show(sStart);
   }
 
+  var KEYR = 'tecnoscan_ronda_v1';
+  function loadRound(){ try { return JSON.parse(localStorage.getItem(KEYR)) || []; } catch(e){ return []; } }
+  function saveRound(l){ try { localStorage.setItem(KEYR, JSON.stringify(l)); } catch(e){} }
+  function renderRound(){
+    var l = loadRound().sort(function(a,b){ return b.score - a.score; });
+    $('board-round').innerHTML = l.length ? l.map(function(r, i){ return '<li><span class="pos">' + (i+1) + '</span><span>' + esc(r.name) + '</span><span class="pts">' + r.score + '</span></li>'; }).join('') : '<p class="empty">Aún no hay equipos registrados en esta ronda.</p>';
+  }
+  function gmsg(t, k){ var m = $('m-msg'); m.hidden = false; m.className = 'msg ' + k; m.textContent = t; }
+  function registrar(){
+    var name = $('m-name').value.trim(), code = $('m-code').value.trim().toUpperCase();
+    var m = /^TS-([0-9A-Z]{4})-([0-9A-Z]{3})$/.exec(code);
+    if(!name || !m){ gmsg('Escribe el nombre del equipo y el código completo (TS-0000-000).', 'bad'); return; }
+    var sc = parseInt(m[1], 36);
+    if(chk(name, sc) !== m[2]){ gmsg('El código no coincide con ese equipo. Revisa el nombre y el código.', 'bad'); return; }
+    var l = loadRound().filter(function(r){ return r.name.toLowerCase() !== name.toLowerCase(); });
+    l.push({name:name, score:sc});
+    saveRound(l);
+    renderRound();
+    gmsg('Registrado: ' + name + ' · ' + sc + ' puntos', 'ok');
+    $('m-name').value = ''; $('m-code').value = '';
+  }
+  $('btn-guia').addEventListener('click', function(){ renderRound(); show(sGuia); });
+  $('btn-exitguia').addEventListener('click', toStart);
+  $('btn-reg').addEventListener('click', registrar);
+  $('btn-newround').addEventListener('click', function(){ if(confirm('¿Borrar la clasificación de esta ronda?')){ saveRound([]); renderRound(); } });
+
   $('btn-start').addEventListener('click', start);
   $('nick').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ start(); } });
   $('btn-next').addEventListener('click', function(){ idx++; nextQuestion(); });
   $('btn-again').addEventListener('click', toStart);
   lvButtons();
   toStart();
+  if(/[?&]marcador/.test(location.search)){ renderRound(); show(sGuia); }
 })();
 </script>
 </body>
