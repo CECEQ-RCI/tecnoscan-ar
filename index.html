@@ -70,7 +70,8 @@
     padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
     pointer-events:none;
   }
-  .hud > *{pointer-events:auto;}
+  .hud .info-card, .hud .nav-btn{pointer-events:auto;}
+  .qr-hint{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:rgba(17,24,32,.82);border:1px solid var(--accent);border-radius:14px;padding:14px 18px;text-align:center;max-width:80%;line-height:1.5;pointer-events:none;backdrop-filter:blur(8px);}
 
   .hud-top{
     display:flex;
@@ -342,6 +343,8 @@
     </div>
   </div>
 
+  <div class="qr-hint" id="qr-hint" hidden>Apunta la cámara al código QR</div>
+
   <div class="reticle"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
 
   <div class="hud-mid">
@@ -362,6 +365,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 (function(){
   "use strict";
@@ -935,6 +939,7 @@
     g.userData.baseTilt = 0.06;
     g.userData.fitR = 3.2;
     g.userData.fitH = 4.5;
+    g.userData.natural = 4.9;
     return g;
   }
 
@@ -953,23 +958,26 @@
     g.userData.baseTilt = 0.05;
     g.userData.fitR = 2.2;
     g.userData.fitH = 3.6;
+    g.userData.natural = 3.4;
     return g;
   }
 
   var MODELOS = {
     gm: {label:'Gómez Morín', tag:'LOGO · CECEQ GÓMEZ MORÍN', color:0xd81b60, build:buildGM, flat:true,
-         bootH:'Activa la cámara para ver el logo del Gómez Morín en 3D',
-         bootP:'El logo aparecerá en realidad aumentada frente a ti. Puedes deslizar el dedo para verlo desde otros ángulos.',
+         bootH:'Apunta la cámara al código QR para ver el logo en 3D',
+         bootP:'Activa la cámara y apunta al código QR: el logo aparecerá sobre él. Si dejas de ver el código, el logo desaparece.',
          desc:'Logo del Centro Educativo y Cultural del Estado “Manuel Gómez Morín”, en 3D. Desliza para verlo desde otro ángulo.'},
     mochila: {label:'Mochila de cuero', tag:'MODELO 3D · PRUEBA', color:0x8a5a2b, build:buildMochila,
-         bootH:'Activa la cámara para ver la mochila en 3D',
-         bootP:'La mochila aparecerá en realidad aumentada frente a ti. Puedes deslizar el dedo para verla desde otros ángulos.',
+         bootH:'Apunta la cámara al código QR para ver la mochila en 3D',
+         bootP:'Activa la cámara y apunta al código QR: la mochila aparecerá sobre él. Si dejas de ver el código, desaparece.',
          desc:'Mochila de cuero vintage en 3D. Desliza para verla desde otro ángulo.'}
   };
+  var singleKey = null;
   (function pickSingle(){
     var m = new URLSearchParams(location.search).get('modelo');
     if(m && MODELOS[m]){
       TOPICS = [MODELOS[m]];
+      singleKey = m;
       if(MODELOS[m].flat) renderer.toneMapping = THREE.NoToneMapping;
       document.body.classList.add('single');
       var h1 = document.querySelector('#boot h1'), p = document.querySelector('#boot p');
@@ -992,6 +1000,7 @@
   function fitCamera(){
     var g = groups[current];
     if(!g) return;
+    if(qrMode){ qrPlaceCamera(); return; }
     var w = window.innerWidth, h = window.innerHeight;
     var top = 84, bottom = h * 0.55;
     var card = document.querySelector(".info-card");
@@ -1067,6 +1076,59 @@
   canvas.addEventListener('touchmove', pointerMove, {passive:true});
   canvas.addEventListener('touchend', pointerUp);
 
+  /* ---------- modo QR: el modelo aparece sobre el código y se oculta cuando deja de verse ---------- */
+  var qrMode = false, qrHolder = null, qrLast = 0, qrCorners = null, qrSm = null;
+  var qrCanvas = document.createElement('canvas'), qrCtx = qrCanvas.getContext('2d', {willReadFrequently:true});
+  var QR_DIST = 8, QR_K = 2.4;
+  function qrPlaceCamera(){
+    camera.position.set(0, 0, QR_DIST);
+    camera.lookAt(0, 0, 0);
+    camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+  }
+  function qrAccept(text){
+    try { return new URL(text).searchParams.get('modelo') === singleKey; } catch(e){ return false; }
+  }
+  function qrScan(){
+    if(!qrMode || !video || video.readyState < 2 || typeof jsQR !== 'function') return;
+    var vw = video.videoWidth, vh = video.videoHeight;
+    if(!vw || !vh) return;
+    var w = 480, h = Math.round(vh * w / vw);
+    if(qrCanvas.width !== w || qrCanvas.height !== h){ qrCanvas.width = w; qrCanvas.height = h; }
+    qrCtx.drawImage(video, 0, 0, w, h);
+    var res = jsQR(qrCtx.getImageData(0, 0, w, h).data, w, h, {inversionAttempts:'dontInvert'});
+    if(res && qrAccept(res.data)){
+      var k = vw / w, L = res.location;
+      qrCorners = [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].map(function(p){ return {x:p.x*k, y:p.y*k}; });
+      qrLast = performance.now();
+    }
+  }
+  function qrUpdate(now){
+    var seen = qrCorners && (now - qrLast) < 700;
+    if(qrHolder) qrHolder.visible = !!seen;
+    var hint = document.getElementById('qr-hint');
+    if(hint) hint.hidden = !!seen;
+    if(!seen){ qrSm = null; return; }
+    var w = window.innerWidth, h = window.innerHeight, vw = video.videoWidth, vh = video.videoHeight;
+    var sc = Math.max(w/vw, h/vh), ox = (w - vw*sc)/2, oy = (h - vh*sc)/2;
+    var P = qrCorners.map(function(p){ return {x:p.x*sc + ox, y:p.y*sc + oy}; });
+    var d = function(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); };
+    var cx = (P[0].x + P[1].x + P[2].x + P[3].x)/4, cy = (P[0].y + P[1].y + P[2].y + P[3].y)/4;
+    var side = (d(P[0],P[1]) + d(P[1],P[2]) + d(P[2],P[3]) + d(P[3],P[0]))/4;
+    var roll = Math.atan2(P[1].y - P[0].y, P[1].x - P[0].x);
+    var ppu = h / (2 * QR_DIST * Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
+    var g = groups[current], nat = (g && g.userData.natural) || 4;
+    var tgt = {x:(cx - w/2)/ppu, y:-(cy - h/2)/ppu, s:(side/ppu*QR_K)/nat, r:-roll};
+    if(!qrSm){ qrSm = tgt; }
+    else {
+      var dr = tgt.r - qrSm.r; while(dr > Math.PI) dr -= 2*Math.PI; while(dr < -Math.PI) dr += 2*Math.PI;
+      qrSm.x += (tgt.x - qrSm.x)*0.4; qrSm.y += (tgt.y - qrSm.y)*0.4; qrSm.s += (tgt.s - qrSm.s)*0.4; qrSm.r += dr*0.4;
+    }
+    qrHolder.position.set(qrSm.x, qrSm.y, 0);
+    qrHolder.scale.setScalar(qrSm.s);
+    qrHolder.rotation.z = qrSm.r;
+  }
+
   var clock = new THREE.Clock();
   function animate(){
     requestAnimationFrame(animate);
@@ -1079,6 +1141,7 @@
       g.rotation.x = (g.userData.baseTilt || 0) + dragRotX;
       if(g.userData.update) g.userData.update(t, dt);
     }
+    if(qrMode) qrUpdate(performance.now());
     renderer.render(scene, camera);
   }
   animate();
@@ -1097,6 +1160,15 @@
     hud.hidden = false;
     veil.hidden = false;
     if(!withCamera){ badgeNoCam.hidden = false; }
+    qrMode = !!withCamera && !!singleKey;
+    if(qrMode){
+      qrHolder = new THREE.Group();
+      scene.add(qrHolder);
+      qrHolder.add(groups[current]);
+      qrHolder.visible = false;
+      document.getElementById('qr-hint').hidden = false;
+      setInterval(qrScan, 90);
+    }
     fitCamera();
   }
 
