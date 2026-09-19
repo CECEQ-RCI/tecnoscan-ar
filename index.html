@@ -287,6 +287,7 @@
     max-width:340px;
   }
   [hidden]{display:none !important;}
+  body.single #btn-prev, body.single #btn-next, body.single #dots{display:none;}
   .badge-nocam{
     position:fixed;
     top:max(60px, calc(env(safe-area-inset-top) + 44px));
@@ -802,6 +803,156 @@
     return g;
   }
 
+  /* ---------- LOGO GÓMEZ MORÍN EN 3D (trazado del archivo del logo) ---------- */
+  var GM_IMG = 'logo-gm.jpg';
+  var GM_PALETTE = [[255,255,255],[215,25,93],[178,205,58],[33,148,196],[90,91,93]];
+  var GM_COLORS = [null, 0xd81b60, 0xb5cc33, 0x2196c9, 0x5a5b5d];
+
+  function gmArea(p){ var a = 0; for(var i=0;i<p.length;i++){ var q = p[(i+1)%p.length]; a += p[i][0]*q[1] - q[0]*p[i][1]; } return a/2; }
+  function gmInPoly(pt, poly){
+    var c = false, x = pt[0], y = pt[1];
+    for(var i=0, j=poly.length-1; i<poly.length; j=i++){
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if(((yi > y) !== (yj > y)) && (x < (xj - xi)*(y - yi)/(yj - yi) + xi)) c = !c;
+    }
+    return c;
+  }
+  function gmDP(pts, eps){
+    if(pts.length < 3) return pts;
+    var keep = new Array(pts.length), stack = [[0, pts.length-1]];
+    keep[0] = keep[pts.length-1] = true;
+    while(stack.length){
+      var se = stack.pop(), s = se[0], e = se[1], a = pts[s], b = pts[e];
+      var dx = b[0]-a[0], dy = b[1]-a[1], len = Math.sqrt(dx*dx + dy*dy) || 1, md = 0, mi = -1;
+      for(var i=s+1;i<e;i++){
+        var d = Math.abs(dy*pts[i][0] - dx*pts[i][1] + b[0]*a[1] - b[1]*a[0]) / len;
+        if(d > md){ md = d; mi = i; }
+      }
+      if(md > eps && mi > 0){ keep[mi] = true; stack.push([s, mi], [mi, e]); }
+    }
+    return pts.filter(function(_, i){ return keep[i]; });
+  }
+  function gmSimplify(pts){
+    var out = [];
+    for(var i=0;i<pts.length;i++){
+      var a = pts[(i+pts.length-1)%pts.length], b = pts[i], c = pts[(i+1)%pts.length];
+      if((b[0]-a[0])*(c[1]-b[1]) - (b[1]-a[1])*(c[0]-b[0]) !== 0) out.push(b);
+    }
+    if(out.length < 4) return out;
+    var far = 0, fd = -1;
+    for(var k=1;k<out.length;k++){ var dd = Math.pow(out[k][0]-out[0][0],2) + Math.pow(out[k][1]-out[0][1],2); if(dd > fd){ fd = dd; far = k; } }
+    var h1 = gmDP(out.slice(0, far+1), 1.3), h2 = gmDP(out.slice(far).concat([out[0]]), 1.3);
+    return h1.slice(0, -1).concat(h2.slice(0, -1));
+  }
+  function gmTrace(cls, W, H, id){
+    var edges = [], starts = new Map(), stride = W + 1;
+    function inside(x, y){ return x >= 0 && y >= 0 && x < W && y < H && cls[y*W + x] === id; }
+    function addEdge(sx, sy, ex, ey){
+      var i = edges.length; edges.push([sx, sy, ex, ey, 0]);
+      var k = sy*stride + sx, l = starts.get(k);
+      if(l) l.push(i); else starts.set(k, [i]);
+    }
+    for(var y=0;y<H;y++){ for(var x=0;x<W;x++){
+      if(!inside(x, y)) continue;
+      if(!inside(x, y-1)) addEdge(x, y, x+1, y);
+      if(!inside(x+1, y)) addEdge(x+1, y, x+1, y+1);
+      if(!inside(x, y+1)) addEdge(x+1, y+1, x, y+1);
+      if(!inside(x-1, y)) addEdge(x, y+1, x, y);
+    } }
+    var loops = [];
+    for(var i=0;i<edges.length;i++){
+      if(edges[i][4]) continue;
+      var pts = [], e = i;
+      while(e !== undefined && !edges[e][4]){
+        edges[e][4] = 1;
+        pts.push([edges[e][0], edges[e][1]]);
+        var cand = starts.get(edges[e][3]*stride + edges[e][2]), nxt;
+        if(cand){ for(var c=0;c<cand.length;c++){ if(!edges[cand[c]][4]){ nxt = cand[c]; break; } } }
+        e = nxt;
+      }
+      if(pts.length > 3) loops.push(pts);
+    }
+    return loops;
+  }
+  function gmShapes(loops, W, H, s){
+    var toV = function(p){ return new THREE.Vector2((p[0] - W/2)*s, -(p[1] - H/2)*s); };
+    var polys = loops.map(function(l){ return {pts:gmSimplify(l), area:gmArea(l)}; }).filter(function(p){ return p.pts.length >= 3 && Math.abs(p.area) > 24; });
+    var outers = polys.filter(function(p){ return p.area > 0; }), holes = polys.filter(function(p){ return p.area < 0; });
+    outers.forEach(function(o){ o.shape = new THREE.Shape(o.pts.map(toV)); });
+    holes.forEach(function(h){
+      var best = null;
+      outers.forEach(function(o){ if(gmInPoly(h.pts[0], o.pts) && (!best || o.area < best.area)) best = o; });
+      if(best) best.shape.holes.push(new THREE.Path(h.pts.map(toV)));
+    });
+    return outers.map(function(o){ return o.shape; });
+  }
+
+  function buildGM(){
+    var g = new THREE.Group();
+    var lin = function(hex){ return new THREE.Color(hex).convertSRGBToLinear(); };
+    var plate = phys({color:lin(0xf4f4f0), roughness:0.55, metalness:0, clearcoat:0.2, clearcoatRoughness:0.4, envMapIntensity:0.25});
+    add(g, roundedBox(4.9, 4.3, 0.12, 0.05, 3), plate, 0, 0, -0.07);
+    var img = new Image();
+    img.onload = function(){
+      var UP = 2, W = img.naturalWidth*UP, H = img.naturalHeight*UP, s = 4.6/W;
+      try {
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        var cx = cv.getContext('2d'); cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+        cx.drawImage(img, 0, 0, W, H);
+        var data = cx.getImageData(0, 0, W, H).data, cls = new Uint8Array(W*H);
+        for(var i=0;i<W*H;i++){
+          var r = data[i*4], gg = data[i*4+1], b = data[i*4+2];
+          var mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), lum = (r + gg + b)/3, sat = mx - mn, c = 0;
+          if(sat < 45){ c = lum < 172 ? 4 : 0; }
+          else if(lum > 218){ c = 0; }
+          else {
+            var bd = 1e9;
+            for(var p=1;p<4;p++){
+              var d = Math.pow(r-GM_PALETTE[p][0],2) + Math.pow(gg-GM_PALETTE[p][1],2) + Math.pow(b-GM_PALETTE[p][2],2);
+              if(d < bd){ bd = d; c = p; }
+            }
+          }
+          cls[i] = c;
+        }
+        for(var id=1; id<GM_PALETTE.length; id++){
+          var shapes = gmShapes(gmTrace(cls, W, H, id), W, H, s);
+          if(!shapes.length) continue;
+          var isText = (id === 4);
+          var geo = new THREE.ExtrudeGeometry(shapes, {depth:isText ? 0.1 : 0.17, bevelEnabled:true, bevelThickness:0.012, bevelSize:0.007, bevelSegments:2, curveSegments:1});
+          var m = isText ? mat({color:lin(GM_COLORS[id]), roughness:0.55, metalness:0.1, envMapIntensity:0.35}) : phys({color:lin(GM_COLORS[id]), roughness:0.4, metalness:0, clearcoat:0.5, clearcoatRoughness:0.25, envMapIntensity:0.35});
+          g.add(new THREE.Mesh(geo, m));
+        }
+      } catch(e){
+        var t = new THREE.Texture(img); t.needsUpdate = true; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso;
+        var pl = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6*H/W), new THREE.MeshBasicMaterial({map:t, transparent:true}));
+        pl.position.z = 0.01; g.add(pl);
+      }
+    };
+    img.src = GM_IMG;
+    g.userData.isStatic = true;
+    g.userData.baseYaw = 0.4;
+    g.userData.baseTilt = 0.06;
+    g.userData.fitR = 3.2;
+    g.userData.fitH = 4.5;
+    return g;
+  }
+
+  var MODELOS = {
+    gm: {label:'Gómez Morín', tag:'LOGO · CECEQ GÓMEZ MORÍN', color:0xd81b60, build:buildGM,
+         desc:'Logo del Centro Educativo y Cultural del Estado “Manuel Gómez Morín”, en 3D. Desliza para verlo desde otro ángulo.'}
+  };
+  (function pickSingle(){
+    var m = new URLSearchParams(location.search).get('modelo');
+    if(m && MODELOS[m]){
+      TOPICS = [MODELOS[m]];
+      renderer.toneMapping = THREE.NoToneMapping;
+      document.body.classList.add('single');
+      var h1 = document.querySelector('#boot h1'), p = document.querySelector('#boot p');
+      if(h1) h1.textContent = 'Activa la cámara para ver el logo del Gómez Morín en 3D';
+      if(p) p.textContent = 'El logo aparecerá en realidad aumentada frente a ti. Puedes deslizar el dedo para verlo desde otros ángulos.';
+    }
+  })();
+
   var groups = TOPICS.map(function(t){
     var g = t.build(t.color);
     g.visible = false;
@@ -850,7 +1001,7 @@
     current = i;
     dragRotX = 0; dragRotY = 0;
     fitCamera();
-    document.getElementById('card-idx').textContent = 'PIEZA ' + (i+1) + ' / ' + TOPICS.length;
+    document.getElementById('card-idx').textContent = (TOPICS[i].tag || ('PIEZA ' + (i+1) + ' / ' + TOPICS.length));
     document.getElementById('card-title').textContent = TOPICS[i].label;
     document.getElementById('card-desc').textContent = TOPICS[i].desc;
     var dots = document.getElementById('dots');
@@ -899,7 +1050,7 @@
     autoRotY += 0.0032;
     var g = groups[current];
     if(g){
-      g.rotation.y = autoRotY + dragRotY;
+      g.rotation.y = (g.userData.isStatic ? (g.userData.baseYaw || 0) : autoRotY) + dragRotY;
       g.rotation.x = (g.userData.baseTilt || 0) + dragRotX;
       if(g.userData.update) g.userData.update(t, dt);
     }
