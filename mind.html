@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TecnoScan AR · MindAR</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Unbounded:wght@600;700&display=swap">
+<style>
+  :root{--bg:#0a0f14;--surface:#111820;--border:#28374a;--text:#e9f1f6;--dim:#8fa3b8;--accent:#4de8d4;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);overflow:hidden;font-family:'IBM Plex Mono',Consolas,monospace;}
+  .hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:flex;flex-direction:column;justify-content:space-between;padding:max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));}
+  .brand .e{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+  .brand .n{font-family:'Unbounded','Segoe UI',sans-serif;font-weight:600;font-size:16px;margin-top:2px;text-shadow:0 1px 8px rgba(0,0,0,.6);}
+  .status{position:absolute;top:max(16px, env(safe-area-inset-top));right:16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);background:rgba(17,24,32,.82);border:1px solid var(--border);border-radius:999px;padding:6px 12px;}
+  .status.ok{color:#062420;background:var(--accent);border-color:var(--accent);}
+  .hint{align-self:center;margin-bottom:6vh;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.6;background:rgba(17,24,32,.85);border:1px solid var(--accent);border-radius:14px;padding:14px 18px;max-width:80%;}
+  .hint[hidden]{display:none;}
+  .ver{align-self:center;font-size:10px;letter-spacing:.1em;color:var(--dim);opacity:.7;}
+</style>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+</head>
+<body>
+<div class="hud">
+  <div class="brand"><div class="e">TecnoScan AR</div><div class="n">Mochila sobre el logo</div></div>
+  <div class="status" id="status">Buscando logo</div>
+  <div class="hint" id="hint">Apunta la cámara al logo del Gómez Morín</div>
+  <div class="ver">A-Frame + MindAR · prueba</div>
+</div>
+
+<a-scene mindar-image="imageTargetSrc: targets.mind; maxTrack: 1; uiScanning: no; uiLoading: yes; missTolerance: 3; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
+         color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true"
+         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  <a-assets>
+    <a-asset-item id="mochila" src="mochila.glb"></a-asset-item>
+  </a-assets>
+  <a-light type="ambient" intensity="1.1"></a-light>
+  <a-light type="directional" intensity="1.6" position="1 2 3"></a-light>
+  <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse"></a-camera>
+  <a-entity id="objetivo" mindar-image-target="targetIndex: 0">
+    <a-gltf-model id="modelo" src="#mochila" position="0 0 0.42" rotation="0 -20 0" scale="0.55 0.55 0.55"></a-gltf-model>
+  </a-entity>
+</a-scene>
+
+<script>
+  (function(){
+    var obj = document.getElementById('objetivo');
+    var st = document.getElementById('status'), hint = document.getElementById('hint');
+    obj.addEventListener('targetFound', function(){ st.textContent = 'Logo detectado'; st.className = 'status ok'; hint.hidden = true; });
+    obj.addEventListener('targetLost', function(){ st.textContent = 'Buscando logo'; st.className = 'status'; hint.hidden = false; });
+  })();
+</script>
+</body>
+</html>
