@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expedición TecnoScan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#0a0f14;
+    --surface:#111820;
+    --surface-2:#161f2a;
+    --border:#28374a;
+    --text:#e9f1f6;
+    --text-dim:#8fa3b8;
+    --accent:#4de8d4;
+    --gold:#ffb454;
+    --c-a:#d81b60;
+    --c-b:#b5cc33;
+    --c-c:#1c86b8;
+    --c-d:#ffb454;
+    --good:#5be38a;
+    --bad:#ff6b6b;
+    --font-display:'Unbounded','Segoe UI',sans-serif;
+    --font-body:'IBM Plex Sans','Segoe UI',sans-serif;
+    --font-mono:'IBM Plex Mono','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  [hidden]{display:none !important;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 800px 420px at 12% -6%, rgba(77,232,212,.12), transparent 60%),
+      radial-gradient(ellipse 600px 420px at 100% 4%, rgba(216,27,96,.10), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    padding-inline:16px;
+    padding-block:20px 32px;
+  }
+  .app{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:18px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .brand .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+  .brand .name{font-family:var(--font-display);font-weight:600;font-size:16px;}
+  .link-ar{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-dim);border:1px solid var(--border);border-radius:999px;padding:7px 13px;text-decoration:none;white-space:nowrap;
+  }
+  .link-ar:hover{color:var(--text);border-color:var(--accent);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+
+  h1{font-family:var(--font-display);font-weight:700;font-size:clamp(28px,7vw,42px);line-height:1.08;margin:0;text-wrap:balance;}
+  h1 span{color:var(--accent);}
+  .lede{color:var(--text-dim);line-height:1.6;font-size:15px;margin:0;max-width:56ch;}
+  .label{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px;}
+  input[type=text]{
+    width:100%;font-family:var(--font-body);font-size:17px;color:var(--text);
+    background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 14px;
+  }
+  input[type=text]:focus{border-color:var(--accent);outline:none;}
+
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .level{
+    font-family:var(--font-body);text-align:left;color:var(--text);cursor:pointer;
+    background:var(--bg);border:1.5px solid var(--border);border-radius:14px;padding:12px 12px 13px;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .level b{font-size:14px;font-weight:600;}
+  .level small{font-size:11.5px;color:var(--text-dim);line-height:1.35;}
+  .level .shape{font-size:20px;line-height:1;}
+  .level[aria-pressed="true"]{border-color:var(--accent);background:rgba(77,232,212,.08);}
+
+  .btn{
+    font-family:var(--font-mono);font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;
+    border-radius:12px;padding:15px 22px;border:1px solid transparent;cursor:pointer;
+  }
+  .btn-primary{background:var(--accent);color:#062420;box-shadow:0 0 24px rgba(77,232,212,.3);}
+  .btn-ghost{background:transparent;color:var(--text);border-color:var(--border);}
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;}
+  .btn-row .btn{flex:1 1 180px;text-align:center;text-decoration:none;}
+
+  .board{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;}
+  .board li{
+    display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;
+    padding:9px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--border);font-size:14px;
+  }
+  .board li.me{border-color:var(--gold);background:rgba(255,180,84,.08);}
+  .board .pos{font-family:var(--font-mono);color:var(--text-dim);font-size:12px;}
+  .board .lv{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-left:6px;}
+  .board .pts{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:500;}
+  .empty{color:var(--text-dim);font-size:13px;margin:0;}
+
+  /* juego */
+  .hud{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;}
+  .chip{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;color:var(--text-dim);}
+  .chip b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums;}
+  .chip.streak{border-color:var(--gold);color:var(--gold);}
+  .timer{height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
+  .timer i{display:block;height:100%;background:var(--accent);transform-origin:left;transition:background .3s;}
+  .timer.low i{background:var(--bad);}
+  .qtext{font-family:var(--font-display);font-weight:600;font-size:clamp(19px,5vw,26px);line-height:1.25;margin:0;text-wrap:balance;min-height:3.8em;display:flex;align-items:center;}
+  .answers{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ans{
+    position:relative;font-family:var(--font-body);font-weight:600;font-size:clamp(14px,3.6vw,17px);line-height:1.25;text-align:left;
+    color:#fff;border:0;border-radius:16px;padding:14px 14px 14px 46px;min-height:118px;cursor:pointer;display:flex;align-items:center;
+    transition:transform .08s, opacity .25s, box-shadow .25s;
+  }
+  .ans:active{transform:scale(.98);}
+  .ans .shape{position:absolute;left:14px;top:14px;font-size:22px;line-height:1;opacity:.9;}
+  .ans[data-k="0"]{background:var(--c-a);}
+  .ans[data-k="1"]{background:var(--c-b);color:#1a2208;}
+  .ans[data-k="2"]{background:var(--c-c);}
+  .ans[data-k="3"]{background:var(--c-d);color:#2a1a02;}
+  .ans.dim{opacity:.28;}
+  .ans.right{box-shadow:0 0 0 4px var(--good), 0 0 26px rgba(91,227,138,.5);}
+  .ans.wrong{opacity:.5;box-shadow:0 0 0 3px var(--bad);}
+  .ans:disabled{cursor:default;}
+  @media(max-width:380px){.answers{grid-template-columns:1fr;}.ans{min-height:76px;}}
+
+  .fb{border-radius:16px;padding:16px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px;}
+  .fb.ok{border-color:var(--good);}
+  .fb.no{border-color:var(--bad);}
+  .fb h3{font-family:var(--font-display);font-size:18px;margin:0;}
+  .fb p{margin:0;font-size:14px;line-height:1.5;color:var(--text-dim);}
+
+  .score{font-family:var(--font-display);font-weight:700;font-size:clamp(48px,14vw,84px);line-height:1;color:var(--gold);font-variant-numeric:tabular-nums;}
+  .souvenir{border:1.5px dashed var(--gold);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px;background:rgba(255,180,84,.06);}
+  .souvenir .code{font-family:var(--font-mono);font-size:26px;letter-spacing:.14em;font-weight:500;color:var(--gold);}
+  .souvenir p{margin:0;font-size:13.5px;line-height:1.5;color:var(--text-dim);}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;}
+  .cat{display:inline-flex;align-items:center;gap:8px;}
+  .cat i{font-style:normal;font-size:15px;}
+  .badges{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .badge{border:1.5px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center;background:var(--bg);opacity:.45;}
+  .badge .g{font-size:26px;line-height:1;}
+  .badge b{font-size:12px;font-weight:600;line-height:1.25;}
+  .badge small{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);}
+  .badge.on{opacity:1;border-color:var(--gold);background:rgba(255,180,84,.07);}
+  .badge.on.full{box-shadow:0 0 18px rgba(255,180,84,.35);}
+  @media(max-width:420px){.badges{grid-template-columns:repeat(2,1fr);}}
+  .msg{font-size:13.5px;margin:0;}
+  .msg.ok{color:var(--good);}
+  .msg.bad{color:var(--bad);}
+  .foot-link{align-self:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);background:none;border:0;cursor:pointer;text-decoration:underline;padding:6px;}
+  .board.big li{font-size:18px;padding:13px 14px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="eyebrow">TecnoScan · Pabellón STEAM</div>
+      <div class="name">Expedición STEM+</div>
+    </div>
+    <a class="link-ar" href="index.html">Ver hologramas AR</a>
+  </div>
+
+  <!-- INICIO -->
+  <section id="s-start" style="display:flex;flex-direction:column;gap:18px;">
+    <h1>Descifra los <span>artefactos</span> del territorio digital</h1>
+    <p class="lede">Tu equipo es una expedición STEM+: cada respuesta correcta desbloquea una insignia de los artefactos que viste en realidad aumentada. 8 preguntas de 20 segundos; entre más rápido aciertan, más puntos suman, y las rachas dan bonos.</p>
+    <div class="panel">
+      <label class="label" for="nick">Nombre de tu equipo</label>
+      <input type="text" id="nick" maxlength="14" autocomplete="off" placeholder="Ej. Los Exploradores">
+      <div class="label">Elige tu nivel</div>
+      <div class="levels" id="levels">
+        <button type="button" class="level" data-lv="0" aria-pressed="false"><span class="shape" style="color:var(--c-a)">●</span><b>Explorador</b><small>Primaria y secundaria</small></button>
+        <button type="button" class="level" data-lv="1" aria-pressed="true"><span class="shape" style="color:var(--c-b)">■</span><b>Creador</b><small>Media superior</small></button>
+        <button type="button" class="level" data-lv="2" aria-pressed="false"><span class="shape" style="color:var(--c-c)">⬢</span><b>Experto</b><small>Docentes y adultos</small></button>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-start">Comenzar expedición</button>
+    </div>
+    <div class="panel">
+      <div class="label">Mejores puntajes en este equipo</div>
+      <ol class="board" id="board-start"></ol>
+    </div>
+    <button type="button" class="foot-link" id="btn-guia">Modo guía · marcador de ronda</button>
+  </section>
+
+  <!-- PREGUNTA -->
+  <section id="s-q" hidden style="display:flex;flex-direction:column;gap:14px;">
+    <div class="hud">
+      <span class="chip">Pregunta <b id="q-num">1</b>/<b id="q-total">8</b></span>
+      <span class="chip streak" id="q-streak" hidden>Racha x<b id="q-streak-n">2</b></span>
+      <span class="chip">Puntos <b id="q-score">0</b></span>
+    </div>
+    <div class="timer" id="timer" aria-hidden="true"><i id="timer-bar"></i></div>
+    <div class="label cat" id="q-cat"></div>
+    <h2 class="qtext" id="q-text"></h2>
+    <div class="answers" id="answers"></div>
+    <div class="fb" id="fb" hidden>
+      <h3 id="fb-title"></h3>
+      <p id="fb-fact"></p>
+      <button type="button" class="btn btn-primary" id="btn-next">Siguiente</button>
+    </div>
+  </section>
+
+  <!-- GUÍA -->
+  <section id="s-guia" hidden style="display:flex;flex-direction:column;gap:18px;">
+    <h1>Marcador de <span>ronda</span></h1>
+    <p class="lede">Cada equipo te muestra su certificado. Escribe su nombre y el código para registrar el puntaje: si no coinciden, el código no es válido.</p>
+    <div class="panel">
+      <label class="label" for="m-name">Nombre del equipo</label>
+      <input type="text" id="m-name" maxlength="14" autocomplete="off">
+      <label class="label" for="m-code">Código del certificado</label>
+      <input type="text" id="m-code" maxlength="12" autocomplete="off" placeholder="TS-0000-000">
+      <button type="button" class="btn btn-primary" id="btn-reg">Registrar equipo</button>
+      <p class="msg" id="m-msg" hidden></p>
+    </div>
+    <div class="panel">
+      <div class="label">Clasificación de la ronda</div>
+      <ol class="board big" id="board-round"></ol>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" id="btn-newround">Nueva ronda</button>
+      <button type="button" class="btn btn-ghost" id="btn-exitguia">Volver al reto</button>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="s-end" hidden style="display:flex;flex-direction:column;gap:18px;">
+    <div>
+      <div class="label" id="end-title">Resultado</div>
+      <div class="score" id="end-score">0</div>
+    </div>
+    <div class="stats">
+      <span class="chip">Aciertos <b id="end-ok">0</b>/<b id="end-total">8</b></span>
+      <span class="chip">Mejor racha <b id="end-streak">0</b></span>
+      <span class="chip" id="end-level"></span>
+    </div>
+    <div class="panel">
+      <div class="label">Insignias de la bitácora</div>
+      <div class="badges" id="badges"></div>
+    </div>
+    <div class="souvenir">
+      <div class="label">Certificado · Explorador/a STEM+</div>
+      <div class="code" id="end-code">TS-00000</div>
+      <p id="end-when"></p>
+      <p>Muestra esta pantalla al guía de la expedición para registrar tu puntaje y recibir tu souvenir.</p>
+    </div>
+    <div class="panel">
+      <div class="label">Mejores puntajes en este equipo</div>
+      <ol class="board" id="board-end"></ol>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" id="btn-again">Jugar otra vez</button>
+      <a class="btn btn-ghost" href="index.html">Ver hologramas AR</a>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var T = 20;
+  var LEVELS = ['Explorador','Creador','Experto'];
+  var SHAPES = ['●','■','⬢','▲'];
+
+  var BANK = [
+    [
+      {c:1,q:'¿Qué parte de una computadora funciona como su “cerebro”?', a:['El procesador (microchip)','El teclado','La pantalla','El ratón'], f:'El procesador es un microchip que ejecuta las instrucciones de todos los programas.'},
+      {c:2,q:'¿Qué necesita un robot para poder moverse?', a:['Motores','Globos','Espejos','Cuerdas de guitarra'], f:'Cada articulación de un brazo robótico tiene su propio motor.'},
+      {c:3,q:'¿Qué significa la sigla QR?', a:['Respuesta rápida (Quick Response)','Queso rojo','Quitar reloj','Quinta ruta'], f:'El código QR se inventó en Japón en 1994 para rastrear piezas de autos.'},
+      {c:3,q:'¿Qué hace la realidad aumentada?', a:['Agrega objetos digitales al mundo real que ves con la cámara','Apaga el celular','Hace crecer las plantas','Cambia el clima'], f:'Es justo lo que viste en los hologramas de TecnoScan.'},
+      {c:0,q:'Las redes neuronales artificiales se inspiran en…', a:['Las neuronas del cerebro','Los relojes de arena','Los volcanes','Las mareas'], f:'Copian de forma simplificada cómo se conectan y transmiten señales las neuronas.'},
+      {c:1,q:'Un microchip está hecho principalmente de…', a:['Silicio','Madera','Papel','Azúcar'], f:'El silicio es un material semiconductor: la base de casi todos los chips.'},
+      {c:2,q:'¿Qué máquina puede repetir tareas como armar autos en una fábrica?', a:['Un brazo robótico','Un paraguas','Una cuchara','Una almohada'], f:'Los brazos robóticos repiten movimientos con precisión de milímetros.'},
+      {c:0,q:'¿Qué necesita una red neuronal artificial para aprender?', a:['Ejemplos (datos)','Bloqueador solar','Gasolina','Pegamento'], f:'Aprende ajustando sus conexiones a partir de muchos ejemplos.'}
+    ],
+    [
+      {c:0,q:'En una red neuronal, los “pesos” sirven para…', a:['Indicar qué tanta importancia tiene cada conexión','Medir cuánto pesa el chip','Guardar contraseñas','Enfriar el procesador'], f:'Entrenar una red es ir ajustando esos pesos hasta que acierta.'},
+      {c:2,q:'¿Qué es un “grado de libertad” en un brazo robótico?', a:['Cada movimiento independiente que puede hacer una articulación','Cada kilo que puede cargar','Cada motor de reserva','Cada cable del brazo'], f:'Un brazo industrial típico tiene 6 grados de libertad.'},
+      {c:1,q:'Un transistor funciona principalmente como…', a:['Un interruptor electrónico','Una batería','Una antena','Una pantalla'], f:'Miles de millones de transistores-interruptor forman un procesador.'},
+      {c:2,q:'¿Qué sensor le indica a un robot en qué ángulo está una articulación?', a:['Un encoder','Un micrófono','Un altavoz','Una cámara de fotos'], f:'El encoder mide cuánto ha girado el eje del motor, y así el brazo sabe dónde está.'},
+      {c:3,q:'La realidad aumentada se diferencia de la virtual porque…', a:['Superpone lo digital al mundo real, sin reemplazarlo','Necesita siempre visores cerrados','No usa cámara','Solo funciona sin internet'], f:'La virtual te mete en un mundo totalmente digital; la aumentada lo mezcla con el tuyo.'},
+      {c:0,q:'¿Qué significa la sigla IA?', a:['Inteligencia Artificial','Internet Avanzado','Interfaz Analógica','Impulso Alterno'], f:'Las redes neuronales son una de las técnicas más usadas de la IA.'},
+      {c:1,q:'La frecuencia de un procesador, medida en GHz, indica…', a:['Cuántos ciclos por segundo realiza (miles de millones)','Su peso','Su temperatura','El tamaño de la pantalla'], f:'3 GHz significa unos 3 mil millones de ciclos cada segundo.'},
+      {c:3,q:'¿Qué sensor usa un celular para detectar que lo giras?', a:['Giroscopio','Altavoz','Batería','Antena de TV'], f:'El giroscopio y el acelerómetro hacen que la AR siga tus movimientos.'}
+    ],
+    [
+      {c:3,q:'Un código QR puede leerse aunque esté algo dañado gracias a…', a:['La corrección de errores (Reed-Solomon)','Una segunda cámara','Una tinta especial','La conexión a internet'], f:'Puede recuperar entre 7 % y 30 % de datos perdidos, según el nivel elegido.'},
+      {c:0,q:'En aprendizaje automático, el “sobreajuste” (overfitting) es…', a:['Que el modelo memoriza el entrenamiento y generaliza mal','Que se calienta la GPU','Que tiene demasiadas capas','Que usa muy poca memoria'], f:'Por eso se evalúa con datos que el modelo nunca vio.'},
+      {c:1,q:'La “Ley de Moore” observó que el número de transistores en un chip…', a:['Se duplica aproximadamente cada dos años','Se reduce a la mitad cada año','Se mantiene constante','Crece 1 % por década'], f:'Es una observación de 1965 que guió la industria por décadas.'},
+      {c:2,q:'En robótica, la cinemática inversa sirve para…', a:['Calcular los ángulos de las articulaciones para alcanzar una posición','Medir la batería','Programar el color','Reducir el ruido del motor'], f:'Dice al brazo cómo doblar cada junta para que la pinza llegue a un punto.'},
+      {c:3,q:'¿Por qué la cámara en una página web requiere HTTPS?', a:['El navegador solo permite la cámara en contextos seguros','Es más rápido','Lo exige el fabricante del sensor','Gasta menos batería'], f:'Por eso este pabellón usa una dirección segura para la AR.'},
+      {c:0,q:'Una GPU acelera el entrenamiento de redes neuronales porque…', a:['Realiza muchísimas operaciones en paralelo','Tiene más pantallas','Es más barata','Guarda más archivos'], f:'Entrenar una red es multiplicar enormes matrices, ideal para el paralelismo.'},
+      {c:2,q:'¿Qué es un “gemelo digital”?', a:['Un modelo virtual que replica un objeto o proceso físico','Un clon de un usuario','Un robot con dos brazos','Un chip doble'], f:'Se usa para simular fábricas, motores o ciudades antes de intervenirlas.'},
+      {c:1,q:'Aproximadamente, ¿cuántos transistores tiene un procesador moderno?', a:['Miles de millones','Miles','Cientos','Unos 50'], f:'Los chips actuales superan los 10 000 millones de transistores.'}
+    ]
+  ];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var sStart = $('s-start'), sQ = $('s-q'), sEnd = $('s-end'), sGuia = $('s-guia');
+  var CATS = [{n:'Red neuronal', g:'●', c:'var(--c-a)'},{n:'Microchip', g:'■', c:'var(--c-b)'},{n:'Brazo robótico', g:'⬢', c:'var(--c-c)'},{n:'QR y realidad aumentada', g:'▲', c:'var(--c-d)'}];
+  var catOk = [0,0,0,0], catTot = [0,0,0,0];
+  var level = 1, nick = '', questions = [], idx = 0, score = 0, streak = 0, bestStreak = 0, okCount = 0;
+  var qStart = 0, raf = 0, locked = false, cur = null;
+  var kiosk = /[?&]kiosco/.test(location.search);
+  var KEY = 'tecnoscan_ranking_v1';
+
+  function show(el){ [sStart, sQ, sEnd, sGuia].forEach(function(s){ s.hidden = (s !== el); }); window.scrollTo(0,0); }
+  function shuffle(a){ a = a.slice(); for(var i=a.length-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+
+  function loadRank(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
+  function saveRank(list){ try { localStorage.setItem(KEY, JSON.stringify(list)); } catch(e){} }
+  function renderBoard(el, mineTs){
+    var list = loadRank().sort(function(a,b){ return b.score - a.score; }).slice(0, 8);
+    if(!list.length){ el.innerHTML = '<p class="empty">Aún no hay puntajes. ¡Sé la primera persona en jugar!</p>'; return; }
+    el.innerHTML = list.map(function(r, i){
+      return '<li class="' + (r.ts === mineTs ? 'me' : '') + '"><span class="pos">' + (i+1) + '</span><span>' + esc(r.name) + '<span class="lv">' + LEVELS[r.level] + '</span></span><span class="pts">' + r.score + '</span></li>';
+    }).join('');
+  }
+
+  function lvButtons(){
+    var btns = document.querySelectorAll('.level');
+    Array.prototype.forEach.call(btns, function(b){
+      b.addEventListener('click', function(){
+        level = +b.getAttribute('data-lv');
+        Array.prototype.forEach.call(btns, function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      });
+    });
+  }
+
+  function start(){
+    nick = ($('nick').value || '').trim() || ('Equipo-' + (10 + Math.floor(Math.random()*90)));
+    questions = shuffle(BANK[level]);
+    idx = 0; score = 0; streak = 0; bestStreak = 0; okCount = 0; catOk = [0,0,0,0]; catTot = [0,0,0,0];
+    $('q-total').textContent = questions.length;
+    show(sQ);
+    nextQuestion();
+  }
+
+  function nextQuestion(){
+    if(idx >= questions.length){ finish(); return; }
+    var q = questions[idx];
+    var opts = shuffle(q.a.map(function(t, i){ return {t:t, ok:i === 0}; }));
+    cur = {opts:opts, fact:q.f, c:q.c};
+    var ct = CATS[q.c];
+    $('q-cat').innerHTML = '<i style="color:' + ct.c + '">' + ct.g + '</i>Artefacto · ' + ct.n;
+    $('q-num').textContent = idx + 1;
+    $('q-score').textContent = score;
+    $('q-text').textContent = q.q;
+    $('fb').hidden = true;
+    updateStreak();
+    var wrap = $('answers');
+    wrap.innerHTML = '';
+    opts.forEach(function(o, i){
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'ans'; b.setAttribute('data-k', i);
+      b.innerHTML = '<span class="shape" aria-hidden="true">' + SHAPES[i] + '</span><span>' + esc(o.t) + '</span>';
+      b.addEventListener('click', function(){ answer(i); });
+      wrap.appendChild(b);
+    });
+    locked = false;
+    $('timer').classList.remove('low');
+    qStart = performance.now();
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function updateStreak(){
+    $('q-streak').hidden = streak < 2;
+    $('q-streak-n').textContent = streak;
+  }
+
+  function tick(){
+    var left = Math.max(0, T - (performance.now() - qStart)/1000);
+    $('timer-bar').style.transform = 'scaleX(' + (left/T) + ')';
+    $('timer').classList.toggle('low', left <= 5);
+    if(left <= 0){ answer(-1); return; }
+    raf = requestAnimationFrame(tick);
+  }
+
+  function answer(i){
+    if(locked) return;
+    locked = true;
+    cancelAnimationFrame(raf);
+    var elapsed = Math.min(T, (performance.now() - qStart)/1000);
+    var right = cur.opts.findIndex(function(o){ return o.ok; });
+    var ok = i === right;
+    catTot[cur.c]++; if(ok) catOk[cur.c]++;
+    var gained = 0;
+    if(ok){
+      streak++; okCount++; bestStreak = Math.max(bestStreak, streak);
+      gained = Math.round(1000 * (1 - (elapsed/T)/2)) + Math.min(500, Math.max(0, streak - 1) * 100);
+      score += gained;
+    } else { streak = 0; }
+    $('q-score').textContent = score;
+    updateStreak();
+    var btns = $('answers').children;
+    Array.prototype.forEach.call(btns, function(b, k){
+      b.disabled = true;
+      if(k === right){ b.classList.add('right'); }
+      else if(k === i){ b.classList.add('wrong'); }
+      else { b.classList.add('dim'); }
+    });
+    var fb = $('fb');
+    fb.hidden = false;
+    fb.className = 'fb ' + (ok ? 'ok' : 'no');
+    $('fb-title').textContent = ok ? ('¡Correcto! +' + gained) : (i === -1 ? 'Se acabó el tiempo' : 'Casi, esta vez no');
+    $('fb-fact').textContent = cur.fact;
+    $('btn-next').textContent = (idx + 1 >= questions.length) ? 'Ver resultado' : 'Siguiente';
+    $('btn-next').focus({preventScroll:true});
+  }
+
+  function hash(str){ var h = 7; for(var i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; } return h; }
+  function chk(name, sc){ return ('000' + hash(name.trim().toLowerCase() + '|' + sc + '|tsc').toString(36).toUpperCase()).slice(-3); }
+  function makeCode(name, sc){ return 'TS-' + ('0000' + sc.toString(36).toUpperCase()).slice(-4) + '-' + chk(name, sc); }
+
+  function finish(){
+    var ts = Date.now();
+    var list = loadRank();
+    list.push({name:nick, score:score, level:level, ts:ts});
+    list.sort(function(a,b){ return b.score - a.score; });
+    saveRank(list.slice(0, 50));
+    var pct = okCount / questions.length;
+    $('end-title').textContent = 'Expedición completada · ' + nick;
+    $('end-score').textContent = score;
+    $('end-ok').textContent = okCount;
+    $('end-total').textContent = questions.length;
+    $('end-streak').textContent = bestStreak;
+    $('end-level').textContent = 'Nivel ' + LEVELS[level];
+    $('end-code').textContent = makeCode(nick, score);
+    $('badges').innerHTML = CATS.map(function(c, k){
+      var full = catTot[k] > 0 && catOk[k] === catTot[k], on = catOk[k] > 0;
+      return '<div class="badge' + (on ? ' on' : '') + (full ? ' full' : '') + '"><span class="g" style="color:' + c.c + '">' + c.g + '</span><b>' + c.n + '</b><small>' + (full ? 'Oro' : on ? 'Plata' : 'Por descubrir') + '</small></div>';
+    }).join('');
+    $('end-when').textContent = nick + ' · ' + new Date(ts).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'});
+    renderBoard($('board-end'), ts);
+    show(sEnd);
+    if(kiosk){ setTimeout(function(){ if(!sEnd.hidden) toStart(); }, 30000); }
+  }
+
+  function toStart(){
+    $('nick').value = '';
+    renderBoard($('board-start'));
+    show(sStart);
+  }
+
+  var KEYR = 'tecnoscan_ronda_v1';
+  function loadRound(){ try { return JSON.parse(localStorage.getItem(KEYR)) || []; } catch(e){ return []; } }
+  function saveRound(l){ try { localStorage.setItem(KEYR, JSON.stringify(l)); } catch(e){} }
+  function renderRound(){
+    var l = loadRound().sort(function(a,b){ return b.score - a.score; });
+    $('board-round').innerHTML = l.length ? l.map(function(r, i){ return '<li><span class="pos">' + (i+1) + '</span><span>' + esc(r.name) + '</span><span class="pts">' + r.score + '</span></li>'; }).join('') : '<p class="empty">Aún no hay equipos registrados en esta ronda.</p>';
+  }
+  function gmsg(t, k){ var m = $('m-msg'); m.hidden = false; m.className = 'msg ' + k; m.textContent = t; }
+  function registrar(){
+    var name = $('m-name').value.trim(), code = $('m-code').value.trim().toUpperCase();
+    var m = /^TS-([0-9A-Z]{4})-([0-9A-Z]{3})$/.exec(code);
+    if(!name || !m){ gmsg('Escribe el nombre del equipo y el código completo (TS-0000-000).', 'bad'); return; }
+    var sc = parseInt(m[1], 36);
+    if(chk(name, sc) !== m[2]){ gmsg('El código no coincide con ese equipo. Revisa el nombre y el código.', 'bad'); return; }
+    var l = loadRound().filter(function(r){ return r.name.toLowerCase() !== name.toLowerCase(); });
+    l.push({name:name, score:sc});
+    saveRound(l);
+    renderRound();
+    gmsg('Registrado: ' + name + ' · ' + sc + ' puntos', 'ok');
+    $('m-name').value = ''; $('m-code').value = '';
+  }
+  $('btn-guia').addEventListener('click', function(){ renderRound(); show(sGuia); });
+  $('btn-exitguia').addEventListener('click', toStart);
+  $('btn-reg').addEventListener('click', registrar);
+  $('btn-newround').addEventListener('click', function(){ if(confirm('¿Borrar la clasificación de esta ronda?')){ saveRound([]); renderRound(); } });
+
+  $('btn-start').addEventListener('click', start);
+  $('nick').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ start(); } });
+  $('btn-next').addEventListener('click', function(){ idx++; nextQuestion(); });
+  $('btn-again').addEventListener('click', toStart);
+  lvButtons();
+  toStart();
+  if(/[?&]marcador/.test(location.search)){ renderRound(); show(sGuia); }
+})();
+</script>
+</body>
+</html>
