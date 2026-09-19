@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
@@ -334,7 +335,7 @@
     <button class="btn btn-ghost" id="btn-nocam">Continuar sin cámara</button>
   </div>
   <p class="err" id="boot-err" hidden></p>
-  <div class="ver">v3 · modo QR</div>
+  <div class="ver">v4 · modo QR</div>
 </div>
 
 <div class="badge-nocam" id="badge-nocam" hidden>Modo sin cámara</div>
@@ -945,7 +946,7 @@
     g.userData.fitR = 3.2;
     g.userData.fitH = 4.5;
     g.userData.natural = 4.9;
-    g.userData.scaleK = 2.0;
+    g.userData.scaleK = 1.3;
     return g;
   }
 
@@ -1215,7 +1216,7 @@
           sx /= pts.length; sy /= pts.length;
           (Math.abs(sx - bcx) < bw/2 && Math.abs(sy - bcy) < bh/2 ? onBadge : onPlate).push(sh);
         });
-        var silver = new THREE.MeshStandardMaterial({color:lin(0xc4d3e6), roughness:0.32, metalness:0.65, envMapIntensity:0.8, emissive:lin(0x0a1a33), emissiveIntensity:0.6});
+        var silver = new THREE.MeshStandardMaterial({color:lin(0xc4d3e6), roughness:0.42, metalness:0.3, envMapIntensity:0.25, emissive:lin(0x0a1424), emissiveIntensity:0.3});
         silver.onBeforeCompile = function(sh){
           sh.uniforms.uTime = timeU;
           sh.vertexShader = sh.vertexShader
@@ -1223,7 +1224,7 @@
             .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObjPos = position;');
           sh.fragmentShader = sh.fragmentShader
             .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying vec3 vObjPos;')
-            .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat ph = fract((vObjPos.x*0.20 - vObjPos.y*0.12) - uTime*0.22);\nfloat band = smoothstep(0.0, 0.05, ph) * (1.0 - smoothstep(0.05, 0.20, ph));\ntotalEmissiveRadiance += vec3(0.20, 0.65, 1.0) * band * 1.6;');
+            .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat ph = fract((vObjPos.x*0.20 - vObjPos.y*0.12) - uTime*0.22);\nfloat band = smoothstep(0.0, 0.02, ph) * (1.0 - smoothstep(0.02, 0.07, ph));\ntotalEmissiveRadiance += vec3(0.20, 0.65, 1.0) * band * 1.2;');
         };
         var ext = function(list, z, depth){
           if(!list.length) return;
@@ -1244,7 +1245,7 @@
     g.userData.baseYaw = 0;
     g.userData.baseTilt = 0.04;
     g.userData.swing = 0.42;
-    g.userData.scaleK = 2.0;
+    g.userData.scaleK = 1.3;
     g.userData.fitR = 3.3;
     g.userData.fitH = 4.7;
     g.userData.natural = 4.7;
@@ -1308,7 +1309,7 @@
       TOPICS = [MODELOS[m]];
       singleKey = m;
       if(new URLSearchParams(location.search).get('nocam') !== '1'){ var nb = document.getElementById('btn-nocam'); if(nb) nb.hidden = true; }
-      if(MODELOS[m].flat) renderer.toneMapping = THREE.NoToneMapping;
+      if(MODELOS[m].flat){ renderer.toneMapping = THREE.NoToneMapping; rim.color.setHex(0xffffff); rim.intensity = 0.45; }
       document.body.classList.add('single');
       var h1 = document.querySelector('#boot h1'), p = document.querySelector('#boot p');
       if(h1) h1.textContent = MODELOS[m].bootH;
@@ -1419,23 +1420,43 @@
   function qrAccept(text){
     try { return new URL(text).searchParams.get('modelo') === singleKey; } catch(e){ return false; }
   }
+  var qrBox = null;
+  function qrTry(src, sx, sy, sw, sh, outW){
+    var outH = Math.max(8, Math.round(sh * outW / sw));
+    if(qrCanvas.width !== outW || qrCanvas.height !== outH){ qrCanvas.width = outW; qrCanvas.height = outH; }
+    qrCtx.drawImage(src, sx, sy, sw, sh, 0, 0, outW, outH);
+    var res = jsQR(qrCtx.getImageData(0, 0, outW, outH).data, outW, outH, {inversionAttempts:'dontInvert'});
+    if(!(res && qrAccept(res.data))) return null;
+    var k = sw / outW, L = res.location;
+    return [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].map(function(p){ return {x:sx + p.x*k, y:sy + p.y*k}; });
+  }
+  function qrStep(src, vw, vh){
+    var now = performance.now(), corners = null;
+    if(qrBox && now - qrLast < 1500){
+      var m = Math.max(qrBox.x1 - qrBox.x0, qrBox.y1 - qrBox.y0)*0.7 + 40;
+      var sx = Math.max(0, qrBox.x0 - m), sy = Math.max(0, qrBox.y0 - m), ex = Math.min(vw, qrBox.x1 + m), ey = Math.min(vh, qrBox.y1 + m);
+      corners = qrTry(src, sx, sy, ex - sx, ey - sy, Math.min(900, Math.round(ex - sx)));
+    }
+    if(!corners){
+      qrTick++;
+      corners = qrTry(src, 0, 0, vw, vh, (qrTick % 2) ? Math.min(vw, 1280) : Math.min(vw, 640));
+    }
+    if(corners){
+      qrCorners = corners; qrLast = performance.now();
+      var xs = corners.map(function(p){ return p.x; }), ys = corners.map(function(p){ return p.y; });
+      qrBox = {x0:Math.min.apply(null, xs), x1:Math.max.apply(null, xs), y0:Math.min.apply(null, ys), y1:Math.max.apply(null, ys)};
+      return true;
+    }
+    return false;
+  }
   function qrScan(){
     if(!qrMode || !video || video.readyState < 2 || typeof jsQR !== 'function') return;
     var vw = video.videoWidth, vh = video.videoHeight;
     if(!vw || !vh) return;
-    qrTick++;
-    var w = (qrTick % 2) ? Math.min(vw, 960) : 480, h = Math.round(vh * w / vw);
-    if(qrCanvas.width !== w || qrCanvas.height !== h){ qrCanvas.width = w; qrCanvas.height = h; }
-    qrCtx.drawImage(video, 0, 0, w, h);
-    var res = jsQR(qrCtx.getImageData(0, 0, w, h).data, w, h, {inversionAttempts:'dontInvert'});
-    if(res && qrAccept(res.data)){
-      var k = vw / w, L = res.location;
-      qrCorners = [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].map(function(p){ return {x:p.x*k, y:p.y*k}; });
-      qrLast = performance.now();
-    }
+    qrStep(video, vw, vh);
   }
   function qrUpdate(now){
-    var seen = qrCorners && (now - qrLast) < 500;
+    var seen = qrCorners && (now - qrLast) < 1000;
     if(qrHolder) qrHolder.visible = !!seen;
     var hint = document.getElementById('qr-hint');
     if(hint) hint.hidden = !!seen;
@@ -1502,7 +1523,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.setSize(window.innerWidth, window.innerHeight, false);
       document.getElementById('qr-hint').hidden = false;
-      setInterval(qrScan, 90);
+      (function qrLoop(){ qrScan(); setTimeout(qrLoop, 25); })();
     }
     fitCamera();
   }
@@ -1515,7 +1536,7 @@
         : 'La cámara solo funciona en páginas seguras (https://). Abrí la versión publicada con https o usá "Continuar sin cámara".';
       return;
     }
-    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false})
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}}, audio:false})
       .then(function(stream){
         video.srcObject = stream;
         video.hidden = false;
