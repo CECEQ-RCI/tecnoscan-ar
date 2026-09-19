@@ -361,6 +361,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 (function(){
   "use strict";
@@ -937,19 +938,43 @@
     return g;
   }
 
+  function buildMochila(){
+    var g = new THREE.Group();
+    new THREE.GLTFLoader().load('mochila.glb', function(gltf){
+      var obj = gltf.scene;
+      var box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+      var k = 3.4 / Math.max(size.x, size.y, size.z);
+      obj.scale.setScalar(k);
+      obj.position.set(-c.x*k, -c.y*k, -c.z*k);
+      g.add(obj);
+    }, undefined, function(e){ console.error('No se pudo cargar mochila.glb', e); });
+    g.userData.isStatic = true;
+    g.userData.baseYaw = 0.5;
+    g.userData.baseTilt = 0.05;
+    g.userData.fitR = 2.2;
+    g.userData.fitH = 3.6;
+    return g;
+  }
+
   var MODELOS = {
-    gm: {label:'Gómez Morín', tag:'LOGO · CECEQ GÓMEZ MORÍN', color:0xd81b60, build:buildGM,
-         desc:'Logo del Centro Educativo y Cultural del Estado “Manuel Gómez Morín”, en 3D. Desliza para verlo desde otro ángulo.'}
+    gm: {label:'Gómez Morín', tag:'LOGO · CECEQ GÓMEZ MORÍN', color:0xd81b60, build:buildGM, flat:true,
+         bootH:'Activa la cámara para ver el logo del Gómez Morín en 3D',
+         bootP:'El logo aparecerá en realidad aumentada frente a ti. Puedes deslizar el dedo para verlo desde otros ángulos.',
+         desc:'Logo del Centro Educativo y Cultural del Estado “Manuel Gómez Morín”, en 3D. Desliza para verlo desde otro ángulo.'},
+    mochila: {label:'Mochila de cuero', tag:'MODELO 3D · PRUEBA', color:0x8a5a2b, build:buildMochila,
+         bootH:'Activa la cámara para ver la mochila en 3D',
+         bootP:'La mochila aparecerá en realidad aumentada frente a ti. Puedes deslizar el dedo para verla desde otros ángulos.',
+         desc:'Mochila de cuero vintage en 3D. Desliza para verla desde otro ángulo.'}
   };
   (function pickSingle(){
     var m = new URLSearchParams(location.search).get('modelo');
     if(m && MODELOS[m]){
       TOPICS = [MODELOS[m]];
-      renderer.toneMapping = THREE.NoToneMapping;
+      if(MODELOS[m].flat) renderer.toneMapping = THREE.NoToneMapping;
       document.body.classList.add('single');
       var h1 = document.querySelector('#boot h1'), p = document.querySelector('#boot p');
-      if(h1) h1.textContent = 'Activa la cámara para ver el logo del Gómez Morín en 3D';
-      if(p) p.textContent = 'El logo aparecerá en realidad aumentada frente a ti. Puedes deslizar el dedo para verlo desde otros ángulos.';
+      if(h1) h1.textContent = MODELOS[m].bootH;
+      if(p) p.textContent = MODELOS[m].bootP;
     }
   })();
 
