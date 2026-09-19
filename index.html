@@ -71,6 +71,9 @@
     pointer-events:none;
   }
   .hud .info-card, .hud .nav-btn{pointer-events:auto;}
+  .qr-status{position:absolute;top:max(16px, env(safe-area-inset-top));right:16px;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);background:rgba(17,24,32,.82);border:1px solid var(--border);border-radius:999px;padding:6px 12px;pointer-events:none;}
+  .qr-status.ok{color:#062420;background:var(--accent);border-color:var(--accent);}
+  .ver{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--text-dim);opacity:.6;}
   .qr-hint{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);font-family:var(--font-mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:rgba(17,24,32,.82);border:1px solid var(--accent);border-radius:14px;padding:14px 18px;text-align:center;max-width:80%;line-height:1.5;pointer-events:none;backdrop-filter:blur(8px);}
 
   .hud-top{
@@ -331,6 +334,7 @@
     <button class="btn btn-ghost" id="btn-nocam">Continuar sin cámara</button>
   </div>
   <p class="err" id="boot-err" hidden></p>
+  <div class="ver">v3 · modo QR</div>
 </div>
 
 <div class="badge-nocam" id="badge-nocam" hidden>Modo sin cámara</div>
@@ -343,6 +347,7 @@
     </div>
   </div>
 
+  <div class="qr-status" id="qr-status" hidden>Buscando QR</div>
   <div class="qr-hint" id="qr-hint" hidden>Apunta la cámara al código QR</div>
 
   <div class="reticle"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div>
@@ -978,6 +983,7 @@
     if(m && MODELOS[m]){
       TOPICS = [MODELOS[m]];
       singleKey = m;
+      if(new URLSearchParams(location.search).get('nocam') !== '1'){ var nb = document.getElementById('btn-nocam'); if(nb) nb.hidden = true; }
       if(MODELOS[m].flat) renderer.toneMapping = THREE.NoToneMapping;
       document.body.classList.add('single');
       var h1 = document.querySelector('#boot h1'), p = document.querySelector('#boot p');
@@ -1104,10 +1110,12 @@
     }
   }
   function qrUpdate(now){
-    var seen = qrCorners && (now - qrLast) < 700;
+    var seen = qrCorners && (now - qrLast) < 500;
     if(qrHolder) qrHolder.visible = !!seen;
     var hint = document.getElementById('qr-hint');
     if(hint) hint.hidden = !!seen;
+    var st = document.getElementById('qr-status');
+    if(st){ st.hidden = false; st.textContent = seen ? 'QR detectado' : 'Buscando QR'; st.className = 'qr-status' + (seen ? ' ok' : ''); }
     if(!seen){ qrSm = null; return; }
     var w = window.innerWidth, h = window.innerHeight, vw = video.videoWidth, vh = video.videoHeight;
     var sc = Math.max(w/vw, h/vh), ox = (w - vw*sc)/2, oy = (h - vh*sc)/2;
