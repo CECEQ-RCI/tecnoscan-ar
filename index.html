@@ -948,6 +948,227 @@
     return g;
   }
 
+  /* ---------- DINOS TECNO (personajes originales) ---------- */
+  var DINO_TAG = 'DINOS TECNO · PERSONAJE';
+  var GROUND = -1.3;
+
+  function ell(parent, mater, rx, ry, rz, x, y, z){
+    var m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), mater);
+    m.scale.set(rx, ry, rz); m.position.set(x, y, z); parent.add(m); return m;
+  }
+  function cone(parent, mater, r, h, x, y, z, rz){
+    var m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 24), mater);
+    m.position.set(x, y, z); m.rotation.z = rz || 0; parent.add(m); return m;
+  }
+  function pillar(parent, mater, r, h, x, z, footMat){
+    var top = GROUND + 0.12 + h;
+    var c = new THREE.Mesh(new THREE.CylinderGeometry(r*0.85, r, h, 24), mater);
+    c.position.set(x, GROUND + 0.12 + h/2, z); parent.add(c);
+    ell(parent, footMat || mater, r*1.35, 0.14, r*1.05, x + r*0.3, GROUND + 0.13, z);
+    return top;
+  }
+  function dinoEyes(parent, x, y, z, s){
+    [-1, 1].forEach(function(sd){
+      var e = new THREE.Mesh(new THREE.SphereGeometry(0.15*s, 20, 16), mat({color:0xffffff, roughness:0.3}));
+      e.position.set(x, y, z*sd); parent.add(e);
+      var p = new THREE.Mesh(new THREE.SphereGeometry(0.085*s, 16, 12), mat({color:0x101418, roughness:0.2}));
+      p.position.set(x + 0.09*s, y, z*sd + 0.03*s*sd); parent.add(p);
+    });
+  }
+  function platform(parent, color){
+    add(parent, cyl(2.3, 2.4, 0.06, 64), mat({color:0x0d1822, roughness:0.5, metalness:0.6}), 0, GROUND - 0.02, 0);
+    var r = add(parent, new THREE.TorusGeometry(2.2, 0.018, 8, 96), glowMat(color, 1.2), 0, GROUND + 0.02, 0);
+    r.rotation.x = Math.PI/2;
+  }
+  function shade(color, k){ return new THREE.Color(color).multiplyScalar(k); }
+
+  function buildByte(color){
+    color = new THREE.Color(color).convertSRGBToLinear();
+    var g = new THREE.Group(), body = new THREE.Group();
+    g.add(body); body.position.x = 0.4;
+    var skin = phys({color:color, roughness:0.5, metalness:0.05, clearcoat:0.35, clearcoatRoughness:0.3});
+    var dark = mat({color:shade(color, 0.7), roughness:0.6});
+    var belly = mat({color:0xe6f5b8, roughness:0.7});
+    var white = mat({color:0xffffff, roughness:0.4});
+    ell(body, skin, 1.25, 0.9, 0.8, 0, -0.1, 0);
+    ell(body, belly, 1.1, 0.62, 0.72, 0.12, -0.42, 0);
+    ell(body, skin, 0.55, 0.55, 0.45, 1.0, 0.5, 0);
+    var head = new THREE.Group(); head.position.set(1.5, 0.78, 0); head.scale.setScalar(1.18); body.add(head);
+    ell(head, skin, 0.62, 0.52, 0.52, 0, 0, 0);
+    ell(head, skin, 0.62, 0.3, 0.42, 0.5, -0.12, 0);
+    ell(head, dark, 0.5, 0.13, 0.36, 0.42, -0.34, 0);
+    for(var i=0;i<5;i++){
+      [-1,1].forEach(function(sd){
+        var t1 = cone(head, white, 0.05, 0.15, 0.2 + i*0.13, -0.25, 0.3*sd, Math.PI);
+        var t2 = cone(head, white, 0.045, 0.12, 0.22 + i*0.12, -0.27, 0.27*sd, 0);
+        t2.position.y = -0.3;
+      });
+    }
+    [-1,1].forEach(function(sd){ ell(head, dark, 0.05, 0.05, 0.05, 1.05, -0.02, 0.13*sd); });
+    dinoEyes(head, 0.25, 0.28, 0.37, 1);
+    [-1,1].forEach(function(sd){
+      var ring = add(head, new THREE.TorusGeometry(0.21, 0.04, 10, 40), glowMat(0x4de8d4, 1.4), 0.3, 0.28, 0.42*sd);
+    });
+    var band = add(head, new THREE.TorusGeometry(0.5, 0.03, 8, 40), glowMat(0x4de8d4, 0.8), -0.05, 0.28, 0);
+    band.rotation.x = Math.PI/2;
+    [-1,1].forEach(function(sd){
+      var arm = ell(body, skin, 0.3, 0.09, 0.09, 0.95, -0.3, 0.72*sd); arm.rotation.z = -0.6;
+      var thigh = ell(body, skin, 0.5, 0.62, 0.4, -0.15, -0.65, 0.45*sd);
+      var shin = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.19, 0.55, 20), skin);
+      shin.position.set(-0.15, -1.0, 0.45*sd); body.add(shin);
+      ell(body, dark, 0.42, 0.13, 0.27, -0.05, GROUND + 0.1, 0.45*sd);
+    });
+    var tail = new THREE.Group(); tail.position.set(-1.05, 0.05, 0); body.add(tail);
+    cone(tail, skin, 0.6, 2.4, -1.2, 0, 0, Math.PI/2);
+    for(var s=0;s<5;s++){
+      cone(body, dark, 0.09, 0.22, -0.9 + s*0.42, 0.72 - Math.abs(s-2)*0.08, 0, 0);
+    }
+    platform(g, color);
+    g.scale.setScalar(0.72); g.position.y = -0.05;
+    g.userData.fitR = 2.4; g.userData.fitH = 2.5; g.userData.baseTilt = 0.1;
+    g.userData.update = function(t){
+      tail.rotation.y = Math.sin(t*2)*0.3;
+      head.rotation.z = Math.sin(t*1.5)*0.07;
+      body.position.y = Math.sin(t*3)*0.02;
+    };
+    return g;
+  }
+
+  function buildPixel(color){
+    color = new THREE.Color(color).convertSRGBToLinear();
+    var g = new THREE.Group(), body = new THREE.Group();
+    g.add(body); body.position.x = 0.1;
+    var skin = phys({color:color, roughness:0.5, metalness:0.05, clearcoat:0.35, clearcoatRoughness:0.3});
+    var dark = mat({color:shade(color, 0.7), roughness:0.6});
+    var belly = mat({color:0xffe3b5, roughness:0.7});
+    var horn = mat({color:0xf6ecd0, roughness:0.4});
+    var frillMat = phys({color:0xd81b60, roughness:0.4, clearcoat:0.6});
+    ell(body, skin, 1.3, 0.85, 0.85, 0, -0.15, 0);
+    ell(body, belly, 1.15, 0.6, 0.8, 0.05, -0.45, 0);
+    [[0.75,1],[0.75,-1],[-0.75,1],[-0.75,-1]].forEach(function(p){ pillar(body, skin, 0.3, 0.75, p[0], 0.5*p[1], dark); });
+    var head = new THREE.Group(); head.position.set(1.55, 0.05, 0); body.add(head);
+    var frill = add(head, cyl(1.0, 1.0, 0.12, 48), frillMat, -0.25, 0.55, 0);
+    frill.rotation.z = Math.PI/2 + 0.2;
+    var ring = add(head, new THREE.TorusGeometry(0.82, 0.03, 8, 64), glowMat(0x4de8d4, 1.3), -0.19, 0.55, 0);
+    ring.rotation.y = Math.PI/2; ring.rotation.x = 0; ring.rotation.z = 0;
+    for(var k=0;k<7;k++){
+      var a = k/7*Math.PI*2;
+      add(head, new THREE.SphereGeometry(0.06, 12, 12), glowMat(0xffb454, 1.2), -0.11, 0.55 + Math.sin(a)*0.55, Math.cos(a)*0.55);
+    }
+    ell(head, skin, 0.72, 0.55, 0.55, 0, 0, 0);
+    cone(head, horn, 0.26, 0.55, 0.78, -0.12, 0, -Math.PI/2);
+    cone(head, horn, 0.09, 0.32, 0.7, 0.3, 0, -0.35);
+    [-1,1].forEach(function(sd){ cone(head, horn, 0.11, 0.75, 0.36, 0.78, 0.32*sd, -1.0); });
+    dinoEyes(head, 0.35, 0.2, 0.42, 1);
+    var tail = new THREE.Group(); tail.position.set(-1.2, 0, 0); body.add(tail);
+    cone(tail, skin, 0.5, 1.8, -0.9, 0, 0, Math.PI/2);
+    platform(g, color);
+    g.scale.setScalar(0.72);
+    g.userData.fitR = 2.3; g.userData.fitH = 2.4; g.userData.baseTilt = 0.1;
+    g.userData.update = function(t){
+      tail.rotation.y = Math.sin(t*2)*0.3;
+      head.rotation.z = Math.sin(t*1.5)*0.05;
+      body.position.y = Math.sin(t*3)*0.02;
+      ring.scale.setScalar(1 + 0.03*Math.sin(t*4));
+    };
+    return g;
+  }
+
+  function buildChipDino(color){
+    color = new THREE.Color(color).convertSRGBToLinear();
+    var g = new THREE.Group(), body = new THREE.Group();
+    g.add(body); body.position.x = 0.4;
+    var skin = phys({color:color, roughness:0.5, metalness:0.05, clearcoat:0.35, clearcoatRoughness:0.3});
+    var dark = mat({color:shade(color, 0.65), roughness:0.6});
+    var belly = mat({color:0xcfe9f7, roughness:0.7});
+    var bone = mat({color:0xf6ecd0, roughness:0.4});
+    ell(body, skin, 1.35, 0.8, 0.72, 0, -0.15, 0);
+    ell(body, belly, 1.2, 0.55, 0.66, 0.05, -0.42, 0);
+    ell(body, skin, 0.5, 0.42, 0.4, 1.15, -0.12, 0);
+    [[-0.7,1,0.34],[-0.7,-1,0.34],[0.75,1,0.27],[0.75,-1,0.27]].forEach(function(p){ pillar(body, skin, p[2], 0.7, p[0], 0.48*p[1], dark); });
+    var head = new THREE.Group(); head.position.set(1.6, -0.25, 0); body.add(head);
+    ell(head, skin, 0.5, 0.36, 0.34, 0, 0, 0);
+    ell(head, skin, 0.42, 0.22, 0.26, 0.4, -0.07, 0);
+    dinoEyes(head, 0.2, 0.15, 0.29, 0.8);
+    var palette = [0xd81b60, 0xb5cc33, 0x4de8d4, 0xffb454, 0x8fd0ff, 0xd81b60, 0xb5cc33];
+    var plates = [];
+    for(var i=0;i<7;i++){
+      var u = -0.85 + i*0.283;
+      var x = u*1.25;
+      var top = -0.15 + 0.8*Math.sqrt(Math.max(0, 1 - Math.pow(x/1.35, 2)));
+      var s = 0.34 + 0.24*(1 - Math.abs(u));
+      var pm = new THREE.Mesh(new THREE.BoxGeometry(s, s, 0.07), new THREE.MeshStandardMaterial({color:new THREE.Color(palette[i]).convertSRGBToLinear(), emissive:new THREE.Color(palette[i]).convertSRGBToLinear(), emissiveIntensity:0.35, roughness:0.4}));
+      pm.rotation.z = Math.PI/4;
+      pm.position.set(x, top + s*0.55, (i%2 ? 0.1 : -0.1));
+      body.add(pm); plates.push(pm);
+    }
+    var tail = new THREE.Group(); tail.position.set(-1.25, 0.05, 0); body.add(tail);
+    cone(tail, skin, 0.5, 1.9, -0.95, 0, 0, Math.PI/2);
+    [[-1.15,0.13],[-1.5,0.1]].forEach(function(p){
+      [-1,1].forEach(function(sd){ cone(tail, bone, 0.07, 0.42, p[0], 0.33, p[1]*sd*0.9, 0.5); });
+    });
+    platform(g, color);
+    g.scale.setScalar(0.75);
+    g.userData.fitR = 2.3; g.userData.fitH = 2.4; g.userData.baseTilt = 0.1;
+    g.userData.update = function(t){
+      tail.rotation.y = Math.sin(t*2)*0.28;
+      head.rotation.z = Math.sin(t*1.5)*0.06;
+      body.position.y = Math.sin(t*3)*0.02;
+      plates.forEach(function(p, i){ p.material.emissiveIntensity = 0.25 + 0.45*(0.5 + 0.5*Math.sin(t*3 - i*0.7)); });
+    };
+    return g;
+  }
+
+  function buildWifi(color){
+    color = new THREE.Color(color).convertSRGBToLinear();
+    var g = new THREE.Group(), body = new THREE.Group();
+    g.add(body); body.position.x = 0.3;
+    var skin = phys({color:color, roughness:0.5, metalness:0.05, clearcoat:0.35, clearcoatRoughness:0.3});
+    var dark = mat({color:shade(color, 0.65), roughness:0.6});
+    var belly = mat({color:0xc7f0ea, roughness:0.7});
+    ell(body, skin, 1.15, 0.85, 0.75, 0, -0.3, 0);
+    ell(body, belly, 1.0, 0.55, 0.7, 0.05, -0.62, 0);
+    [[0.65,1],[0.65,-1],[-0.65,1],[-0.65,-1]].forEach(function(p){ pillar(body, skin, 0.3, 0.8, p[0], 0.5*p[1], dark); });
+    var neck = new THREE.CatmullRomCurve3([new THREE.Vector3(0.7,0.0,0), new THREE.Vector3(1.25,0.6,0), new THREE.Vector3(1.6,1.3,0), new THREE.Vector3(1.75,2.0,0)]);
+    add(body, new THREE.TubeGeometry(neck, 40, 0.27, 20, false), skin, 0, 0, 0);
+    ell(body, skin, 0.3, 0.3, 0.3, 0.7, 0.0, 0);
+    var head = new THREE.Group(); head.position.set(1.8, 2.15, 0); body.add(head);
+    ell(head, skin, 0.42, 0.3, 0.3, 0, 0, 0);
+    ell(head, skin, 0.3, 0.2, 0.22, 0.32, -0.05, 0);
+    dinoEyes(head, 0.15, 0.13, 0.26, 0.75);
+    var arcs = [];
+    [0.32, 0.55, 0.78].forEach(function(r, i){
+      var arc = 1.3;
+      var m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.04, 8, 40, arc), new THREE.MeshStandardMaterial({color:0x4de8d4, emissive:0x4de8d4, emissiveIntensity:1.2, transparent:true}));
+      m.rotation.z = Math.PI/2 - arc/2;
+      m.position.set(0, 0.5, 0);
+      head.add(m); arcs.push(m);
+    });
+    add(head, new THREE.SphereGeometry(0.06, 12, 12), glowMat(0x4de8d4, 1.5), 0, 0.5, 0);
+    var tail = new THREE.Group(); tail.position.set(-1.0, -0.2, 0); body.add(tail);
+    cone(tail, skin, 0.5, 2.6, -1.3, 0, 0, Math.PI/2);
+    platform(g, color);
+    g.scale.setScalar(0.55); g.position.y = -0.5;
+    g.userData.fitR = 1.9; g.userData.fitH = 2.7; g.userData.baseTilt = 0.05;
+    g.userData.update = function(t){
+      tail.rotation.y = Math.sin(t*1.8)*0.25;
+      head.rotation.z = Math.sin(t*1.3)*0.08;
+      arcs.forEach(function(a, i){ a.material.opacity = 0.55 + 0.45*Math.max(0, Math.sin(t*3 - i*0.9)); });
+    };
+    return g;
+  }
+
+  function dinoModel(builder, natural){
+    return function(color){
+      var g = builder(color);
+      g.userData.isStatic = true;
+      g.userData.baseYaw = -0.55;
+      g.userData.natural = natural;
+      g.userData.scaleK = 1.7;
+      return g;
+    };
+  }
+
   function buildMochila(){
     var g = new THREE.Group();
     new THREE.GLTFLoader().load('mochila.glb', function(gltf){
@@ -975,7 +1196,23 @@
     mochila: {label:'Mochila de cuero', tag:'MODELO 3D · PRUEBA', color:0x8a5a2b, build:buildMochila,
          bootH:'Apunta la cámara al código QR para ver la mochila en 3D',
          bootP:'Activa la cámara y apunta al código QR: la mochila aparecerá sobre él. Si dejas de ver el código, desaparece.',
-         desc:'Mochila de cuero vintage en 3D. Desliza para verla desde otro ángulo.'}
+         desc:'Mochila de cuero vintage en 3D. Desliza para verla desde otro ángulo.'},
+    byte: {label:'Byte', tag:'DINOS TECNO · PERSONAJE', color:0x8fcb2f, build:dinoModel(buildByte, 4.4),
+         bootH:'Apunta la cámara al código QR para conocer a Byte',
+         bootP:'Byte aparecerá sobre el código. Si dejas de ver el código, desaparece.',
+         desc:'Soy Byte. Un byte son 8 bits, y con él una computadora guarda una letra. ¡Uso gafas de realidad aumentada para verte!'},
+    pixel: {label:'Píxel', tag:'DINOS TECNO · PERSONAJE', color:0xffa53d, build:dinoModel(buildPixel, 4.2),
+         bootH:'Apunta la cámara al código QR para conocer a Píxel',
+         bootP:'Píxel aparecerá sobre el código. Si dejas de ver el código, desaparece.',
+         desc:'Soy Píxel. Un píxel es el punto de color más pequeño de una pantalla; millones de píxeles juntos forman cada imagen que ves.'},
+    chip: {label:'Chip', tag:'DINOS TECNO · PERSONAJE', color:0x2196c9, build:dinoModel(buildChipDino, 4.2),
+         bootH:'Apunta la cámara al código QR para conocer a Chip',
+         bootP:'Chip aparecerá sobre el código. Si dejas de ver el código, desaparece.',
+         desc:'Soy Chip. Mis placas parecen un circuito porque un chip es el cerebro de las computadoras y guarda miles de millones de transistores.'},
+    wifi: {label:'Wifi', tag:'DINOS TECNO · PERSONAJE', color:0x17b5a3, build:dinoModel(buildWifi, 3.4),
+         bootH:'Apunta la cámara al código QR para conocer a Wifi',
+         bootP:'Wifi aparecerá sobre el código. Si dejas de ver el código, desaparece.',
+         desc:'Soy Wifi. Con mi cuello largo capto señales: el wifi conecta tus aparatos sin cables usando ondas de radio.'}
   };
   var singleKey = null;
   (function pickSingle(){
@@ -1085,7 +1322,7 @@
   /* ---------- modo QR: el modelo aparece sobre el código y se oculta cuando deja de verse ---------- */
   var qrMode = false, qrHolder = null, qrLast = 0, qrCorners = null, qrSm = null;
   var qrCanvas = document.createElement('canvas'), qrCtx = qrCanvas.getContext('2d', {willReadFrequently:true});
-  var QR_DIST = 8, QR_K = 2.4;
+  var QR_DIST = 8, QR_K = 2.4, qrTick = 0;
   function qrPlaceCamera(){
     camera.position.set(0, 0, QR_DIST);
     camera.lookAt(0, 0, 0);
@@ -1099,7 +1336,8 @@
     if(!qrMode || !video || video.readyState < 2 || typeof jsQR !== 'function') return;
     var vw = video.videoWidth, vh = video.videoHeight;
     if(!vw || !vh) return;
-    var w = 480, h = Math.round(vh * w / vw);
+    qrTick++;
+    var w = (qrTick % 2) ? Math.min(vw, 960) : 480, h = Math.round(vh * w / vw);
     if(qrCanvas.width !== w || qrCanvas.height !== h){ qrCanvas.width = w; qrCanvas.height = h; }
     qrCtx.drawImage(video, 0, 0, w, h);
     var res = jsQR(qrCtx.getImageData(0, 0, w, h).data, w, h, {inversionAttempts:'dontInvert'});
@@ -1126,7 +1364,7 @@
     var roll = Math.atan2(P[1].y - P[0].y, P[1].x - P[0].x);
     var ppu = h / (2 * QR_DIST * Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));
     var g = groups[current], nat = (g && g.userData.natural) || 4;
-    var tgt = {x:(cx - w/2)/ppu, y:-(cy - h/2)/ppu, s:(side/ppu*QR_K)/nat, r:-roll};
+    var tgt = {x:(cx - w/2)/ppu, y:-(cy - h/2)/ppu, s:(side/ppu*((g && g.userData.scaleK) || QR_K))/nat, r:-roll};
     if(!qrSm){ qrSm = tgt; }
     else {
       var dr = tgt.r - qrSm.r; while(dr > Math.PI) dr -= 2*Math.PI; while(dr < -Math.PI) dr += 2*Math.PI;
