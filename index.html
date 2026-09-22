@@ -1175,7 +1175,6 @@
   function buildRCI(){
     var g = new THREE.Group();
     var lin = function(hex){ return new THREE.Color(hex).convertSRGBToLinear(); };
-    var timeU = {value:0};
     var inner = new THREE.Group(); g.add(inner);
     var img = new Image();
     img.onload = function(){
@@ -1216,16 +1215,8 @@
           sx /= pts.length; sy /= pts.length;
           (Math.abs(sx - bcx) < bw/2 && Math.abs(sy - bcy) < bh/2 ? onBadge : onPlate).push(sh);
         });
-        var silver = new THREE.MeshStandardMaterial({color:lin(0xc4d3e6), roughness:0.42, metalness:0.3, envMapIntensity:0.25, emissive:lin(0x0a1424), emissiveIntensity:0.3});
-        silver.onBeforeCompile = function(sh){
-          sh.uniforms.uTime = timeU;
-          sh.vertexShader = sh.vertexShader
-            .replace('#include <common>', '#include <common>\nvarying vec3 vObjPos;')
-            .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObjPos = position;');
-          sh.fragmentShader = sh.fragmentShader
-            .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying vec3 vObjPos;')
-            .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\nfloat ph = fract((vObjPos.x*0.20 - vObjPos.y*0.12) - uTime*0.22);\nfloat band = smoothstep(0.0, 0.02, ph) * (1.0 - smoothstep(0.02, 0.07, ph));\ntotalEmissiveRadiance += vec3(0.20, 0.65, 1.0) * band * 1.2;');
-        };
+        var silver = new THREE.MeshStandardMaterial({color:lin(0xd7e1ee), roughness:0.4, metalness:0.35, envMapIntensity:0.35, emissive:lin(0x14243f), emissiveIntensity:0.35});
+
         var ext = function(list, z, depth){
           if(!list.length) return;
           var geo = new THREE.ExtrudeGeometry(list, {depth:depth, bevelEnabled:true, bevelThickness:0.01, bevelSize:0.006, bevelSegments:1, curveSegments:1});
@@ -1249,7 +1240,7 @@
     g.userData.fitR = 3.3;
     g.userData.fitH = 4.7;
     g.userData.natural = 4.7;
-    g.userData.update = function(t){ timeU.value = t; g.position.y = Math.sin(t*1.1)*0.05; };
+    g.userData.update = function(t){ g.position.y = Math.sin(t*1.1)*0.05; };
     return g;
   }
 
