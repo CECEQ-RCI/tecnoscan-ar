@@ -1171,75 +1171,25 @@
     };
   }
 
-  /* ---------- LOGO RCI ANIMADO (trazado de la imagen del logo) ---------- */
-  function buildRCI(){
+  /* ---------- LOGO RCI (modelo 3D del cliente) ---------- */
+  function buildRciModel(){
     var g = new THREE.Group();
-    var lin = function(hex){ return new THREE.Color(hex).convertSRGBToLinear(); };
-    var inner = new THREE.Group(); g.add(inner);
-    var img = new Image();
-    img.onload = function(){
-      var W = img.naturalWidth, H = img.naturalHeight, s = 4.4/W;
-      try {
-        var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-        var cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
-        var data = cx.getImageData(0, 0, W, H).data, cls = new Uint8Array(W*H);
-        var colA = new Uint32Array(W), rowA = new Uint32Array(H), colB = new Uint32Array(W), rowB = new Uint32Array(H);
-        for(var i=0;i<W*H;i++){
-          var r = data[i*4], gg = data[i*4+1], b = data[i*4+2], lum = (r + gg + b)/3, c = 0;
-          if(lum >= 62) c = 2;
-          cls[i] = c;
-          if(c === 2){ var px = i % W, py = (i / W) | 0; colA[px]++; rowA[py]++; if(py < 690){ colB[px]++; rowB[py]++; } }
-        }
-        var lim = function(colN, rowN, th){
-          var x0 = W, x1 = 0, y0 = H, y1 = 0;
-          for(var x=0;x<W;x++){ if(colN[x] > th){ if(x < x0) x0 = x; if(x > x1) x1 = x; } }
-          for(var y=0;y<H;y++){ if(rowN[y] > th){ if(y < y0) y0 = y; if(y > y1) y1 = y; } }
-          return [x0, x1, y0, y1];
-        };
-        var cb = lim(colB, rowB, 40), ca = lim(colA, rowA, 6);
-        var bw = (cb[1] - cb[0] + 24)*s, bh = (cb[3] - cb[2] + 24)*s;
-        var bcx = ((cb[0] + cb[1])/2 - W/2)*s, bcy = -((cb[2] + cb[3])/2 - H/2)*s;
-        var pw = (ca[1] - ca[0] + 120)*s, pht = (ca[3] - ca[2] + 120)*s;
-        var pcx = ((ca[0] + ca[1])/2 - W/2)*s, pcy = -((ca[2] + ca[3])/2 - H/2)*s;
-        inner.position.set(-pcx, -pcy, 0);
-        add(inner, roundedBox(pw, pht, 0.12, 0.08, 3), mat({color:lin(0x050b22), roughness:0.9, metalness:0, envMapIntensity:0.03}), pcx, pcy, -0.07);
-        add(inner, roundedBox(bw, bh, 0.12, Math.min(bw, bh)*0.14, 3), mat({color:lin(0x122951), roughness:0.5, metalness:0.05, envMapIntensity:0.15}), bcx, bcy, 0.05);
-        g.userData.natural = Math.max(pw, pht);
-        g.userData.fitR = Math.hypot(pw, pht)/2;
-        g.userData.fitH = pht;
-
-        var shapes = gmShapes(gmTrace(cls, W, H, 2), W, H, s), onBadge = [], onPlate = [];
-        shapes.forEach(function(sh){
-          var pts = sh.getPoints(), sx = 0, sy = 0;
-          pts.forEach(function(p){ sx += p.x; sy += p.y; });
-          sx /= pts.length; sy /= pts.length;
-          (Math.abs(sx - bcx) < bw/2 && Math.abs(sy - bcy) < bh/2 ? onBadge : onPlate).push(sh);
-        });
-        var silver = new THREE.MeshStandardMaterial({color:lin(0xd7e1ee), roughness:0.4, metalness:0.35, envMapIntensity:0.35, emissive:lin(0x14243f), emissiveIntensity:0.35});
-
-        var ext = function(list, z, depth){
-          if(!list.length) return;
-          var geo = new THREE.ExtrudeGeometry(list, {depth:depth, bevelEnabled:true, bevelThickness:0.01, bevelSize:0.006, bevelSegments:1, curveSegments:1});
-          var m = new THREE.Mesh(geo, silver); m.position.z = z; inner.add(m);
-        };
-        ext(onBadge, 0.11, 0.07);
-        ext(onPlate, -0.01, 0.14);
-      } catch(e){
-        console.error('No se pudo trazar el logo de RCI', e);
-        var t = new THREE.Texture(img); t.needsUpdate = true; t.encoding = THREE.sRGBEncoding;
-        var pl = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 4.4), new THREE.MeshBasicMaterial({map:t}));
-        pl.position.z = 0.01; g.add(pl);
-      }
-    };
-    img.src = 'logo-rci.jpg';
+    new THREE.GLTFLoader().load('logo-rci.glb', function(gltf){
+      var obj = gltf.scene;
+      var box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+      var k = 4.4 / Math.max(size.x, size.y, size.z);
+      obj.scale.setScalar(k);
+      obj.position.set(-c.x*k, -c.y*k, -c.z*k);
+      g.add(obj);
+    }, undefined, function(e){ console.error('No se pudo cargar logo-rci.glb', e); });
     g.userData.isStatic = true;
-    g.userData.baseYaw = 0;
-    g.userData.baseTilt = 0.04;
-    g.userData.swing = 0.42;
+    g.userData.baseYaw = 0.15;
+    g.userData.baseTilt = 0.05;
+    g.userData.swing = 0.32;
     g.userData.scaleK = 1.3;
-    g.userData.fitR = 3.3;
-    g.userData.fitH = 4.7;
-    g.userData.natural = 4.7;
+    g.userData.fitR = 3.0;
+    g.userData.fitH = 4.4;
+    g.userData.natural = 4.4;
     g.userData.update = function(t){ g.position.y = Math.sin(t*1.1)*0.05; };
     return g;
   }
@@ -1288,10 +1238,10 @@
          bootH:'Apunta la cámara al código QR para conocer a Wifi',
          bootP:'Wifi aparecerá sobre el código. Si dejas de ver el código, desaparece.',
          desc:'Soy Wifi. Con mi cuello largo capto señales: el wifi conecta tus aparatos sin cables usando ondas de radio.'},
-    rci: {label:'Red Central de Informática', tag:'LOGO · RCI', color:0x1f2f66, build:buildRCI, flat:true,
+    rci: {label:'Red Central de Informática', tag:'LOGO · RCI', color:0x1f2f66, build:buildRciModel, flat:true,
          bootH:'Apunta la cámara al código QR para ver el logo de RCI en 3D',
          bootP:'El logo de RCI aparecerá sobre el código, con la luz recorriendo sus circuitos. Si dejas de ver el código, desaparece.',
-         desc:'Logo de la Red Central de Informática (RCI) en 3D animado: la luz recorre los circuitos mientras el logo se balancea.'}
+         desc:'Logo de la Red Central de Informática (RCI), el modelo 3D real de la placa, flotando y girando suavemente sobre el código.'}
   };
   var singleKey = null;
   (function pickSingle(){
