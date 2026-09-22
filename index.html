@@ -335,7 +335,7 @@
     <button class="btn btn-ghost" id="btn-nocam">Continuar sin cámara</button>
   </div>
   <p class="err" id="boot-err" hidden></p>
-  <div class="ver">v4 · modo QR</div>
+  <div class="ver">v5 · modo QR</div>
 </div>
 
 <div class="badge-nocam" id="badge-nocam" hidden>Modo sin cámara</div>
@@ -1435,11 +1435,11 @@
     if(qrBox && now - qrLast < 1500){
       var m = Math.max(qrBox.x1 - qrBox.x0, qrBox.y1 - qrBox.y0)*0.7 + 40;
       var sx = Math.max(0, qrBox.x0 - m), sy = Math.max(0, qrBox.y0 - m), ex = Math.min(vw, qrBox.x1 + m), ey = Math.min(vh, qrBox.y1 + m);
-      corners = qrTry(src, sx, sy, ex - sx, ey - sy, Math.min(900, Math.round(ex - sx)));
+      corners = qrTry(src, sx, sy, ex - sx, ey - sy, Math.min(460, Math.round(ex - sx)));
     }
     if(!corners){
       qrTick++;
-      corners = qrTry(src, 0, 0, vw, vh, (qrTick % 2) ? Math.min(vw, 1280) : Math.min(vw, 640));
+      corners = qrTry(src, 0, 0, vw, vh, (qrTick % 2) ? Math.min(vw, 720) : Math.min(vw, 460));
     }
     if(corners){
       qrCorners = corners; qrLast = performance.now();
@@ -1456,7 +1456,7 @@
     qrStep(video, vw, vh);
   }
   function qrUpdate(now){
-    var seen = qrCorners && (now - qrLast) < 1000;
+    var seen = qrCorners && (now - qrLast) < 1600;
     if(qrHolder) qrHolder.visible = !!seen;
     var hint = document.getElementById('qr-hint');
     if(hint) hint.hidden = !!seen;
@@ -1523,7 +1523,7 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.setSize(window.innerWidth, window.innerHeight, false);
       document.getElementById('qr-hint').hidden = false;
-      (function qrLoop(){ qrScan(); setTimeout(qrLoop, 25); })();
+      (function qrLoop(){ var t0 = performance.now(); qrScan(); var cost = performance.now() - t0; setTimeout(qrLoop, Math.max(90, cost * 2.2)); })();
     }
     fitCamera();
   }
