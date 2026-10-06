@@ -63,7 +63,7 @@
   }
   input[type=text]:focus{border-color:var(--accent);outline:none;}
 
-  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .levels{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
   .level{
     font-family:var(--font-body);text-align:left;color:var(--text);cursor:pointer;
     background:var(--bg);border:1.5px solid var(--border);border-radius:14px;padding:12px 12px 13px;
@@ -153,7 +153,7 @@
 <div class="app">
   <div class="topbar">
     <div class="brand">
-      <div class="eyebrow">TecnoScan · Pabellón STEAM</div>
+      <div class="eyebrow">TecnoScan · Pabellón STEM</div>
       <div class="name">Expedición STEM+</div>
     </div>
     <a class="link-ar" href="index.html">Ver hologramas AR</a>
@@ -168,7 +168,6 @@
       <input type="text" id="nick" maxlength="14" autocomplete="off" placeholder="Ej. Los Exploradores">
       <div class="label">Elige tu nivel</div>
       <div class="levels" id="levels">
-        <button type="button" class="level" data-lv="0" aria-pressed="false"><span class="shape" style="color:var(--c-a)">●</span><b>Explorador</b><small>Primaria y secundaria</small></button>
         <button type="button" class="level" data-lv="1" aria-pressed="true"><span class="shape" style="color:var(--c-b)">■</span><b>Creador</b><small>Media superior</small></button>
         <button type="button" class="level" data-lv="2" aria-pressed="false"><span class="shape" style="color:var(--c-c)">⬢</span><b>Experto</b><small>Docentes y adultos</small></button>
       </div>
