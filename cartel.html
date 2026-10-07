@@ -34,8 +34,8 @@
 
 <div id="start">
   <div class="e">TecnoScan AR · Pabellón STEM</div>
-  <h1>Apunta al cartel y conoce a Nano</h1>
-  <p>Nano, el robot del CECEQ, saldrá del cartel del pabellón, te saludará y te contará un Tecnodato en voz alta. Necesita tu cámara y el sonido del celular.</p>
+  <h1>Apunta al cartel y conoce a Byti</h1>
+  <p>Byti, el robot del CECEQ, saldrá del cartel del pabellón, te saludará y te contará un Tecnodato en voz alta. Necesita tu cámara y el sonido del celular.</p>
   <button class="btn" id="btn-start" type="button">Activar cámara y sonido</button>
 </div>
 
@@ -239,7 +239,7 @@
 
     nextFact: function(manual){
       factIdx = (factIdx + 1) % FACTS.length;
-      var title = firstTime ? '¡Hola, soy Nano!' : 'Tecnodato';
+      var title = firstTime ? '¡Hola, soy Byti!' : 'Tecnodato';
       firstTime = false;
       this.bubbleText = {title:title, body:FACTS[factIdx]};
       this.drawBubble(title, FACTS[factIdx]);
@@ -253,7 +253,7 @@
       if(muted || !('speechSynthesis' in window)) return;
       try {
         speechSynthesis.cancel();
-        var u = new SpeechSynthesisUtterance(text);
+        var u = new SpeechSynthesisUtterance(text.replace(/Byti/g, 'Baiti'));
         u.lang = 'es-MX'; u.pitch = 1.4; u.rate = 1.0;
         var v = pickVoice(); if(v) u.voice = v;
         u.onend = function(){ self.talkUntil = performance.now()/1000; };
