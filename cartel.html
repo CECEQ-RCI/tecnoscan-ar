@@ -34,8 +34,8 @@
 
 <div id="start">
   <div class="e">TecnoScan AR · Pabellón STEM</div>
-  <h1>Apunta al cartel y conoce a Byti</h1>
-  <p>Byti, el robot del CECEQ, saldrá del cartel del pabellón, te saludará y te contará un Tecnodato en voz alta. Necesita tu cámara y el sonido del celular.</p>
+  <h1>Apunta al cartel y conoce a Nibble</h1>
+  <p>Nibble, el robot del CECEQ, saldrá del cartel del pabellón, te saludará y te contará un Tecnodato en voz alta. Necesita tu cámara y el sonido del celular.</p>
   <button class="btn" id="btn-start" type="button">Activar cámara y sonido</button>
 </div>
 
@@ -65,6 +65,7 @@
   var T = AFRAME.THREE;
 
   var FACTS = [
+    "Un nibble son 4 bits, la mitad de un byte. ¡Por eso me llamo así!",
     "Un byte son 8 bits: con ellos tu celular guarda una sola letra.",
     "Un chip moderno guarda miles de millones de transistores en unos pocos milímetros.",
     "Un código QR sigue funcionando aunque esté un poco dañado.",
@@ -239,7 +240,7 @@
 
     nextFact: function(manual){
       factIdx = (factIdx + 1) % FACTS.length;
-      var title = firstTime ? '¡Hola, soy Byti!' : 'Tecnodato';
+      var title = firstTime ? '¡Hola, soy Nibble!' : 'Tecnodato';
       firstTime = false;
       this.bubbleText = {title:title, body:FACTS[factIdx]};
       this.drawBubble(title, FACTS[factIdx]);
@@ -253,7 +254,7 @@
       if(muted || !('speechSynthesis' in window)) return;
       try {
         speechSynthesis.cancel();
-        var u = new SpeechSynthesisUtterance(text.replace(/Byti/g, 'Baiti'));
+        var u = new SpeechSynthesisUtterance(text.replace(/nibble/gi, 'níbol'));
         u.lang = 'es-MX'; u.pitch = 1.4; u.rate = 1.0;
         var v = pickVoice(); if(v) u.voice = v;
         u.onend = function(){ self.talkUntil = performance.now()/1000; };
