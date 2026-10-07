@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<title>Nibble sale del logo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Unbounded:wght@600;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root{--bg:#0a0f14;--surface:#111820;--border:#28374a;--text:#e9f1f6;--dim:#8fa3b8;--accent:#4de8d4;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);overflow:hidden;font-family:'IBM Plex Mono',Consolas,monospace;}
+  .hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:flex;flex-direction:column;justify-content:space-between;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));}
+  .brand .e{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+  .brand .n{font-family:'Unbounded','Segoe UI',sans-serif;font-weight:600;font-size:16px;margin-top:2px;text-shadow:0 1px 8px rgba(0,0,0,.6);}
+  .status{position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);background:rgba(17,24,32,.82);border:1px solid var(--border);border-radius:999px;padding:6px 12px;}
+  .status.ok{color:#062420;background:var(--accent);border-color:var(--accent);}
+  .hint{align-self:center;margin-bottom:6vh;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.6;background:rgba(17,24,32,.85);border:1px solid var(--accent);border-radius:14px;padding:14px 18px;max-width:80%;}
+  .hint[hidden]{display:none;}
+  .foot{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:10px;letter-spacing:.1em;color:var(--dim);}
+  .sound{pointer-events:auto;font-family:'IBM Plex Mono',Consolas,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);background:rgba(17,24,32,.85);border:1px solid var(--border);border-radius:999px;padding:8px 14px;cursor:pointer;}
+  #start{position:fixed;inset:0;z-index:30;background:radial-gradient(ellipse at 50% 18%,rgba(77,232,212,.12),transparent 55%),var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px 24px;text-align:center;}
+  #start[hidden]{display:none;}
+  #start h1{font-family:'Unbounded','Segoe UI',sans-serif;font-size:26px;line-height:1.15;margin:0;text-wrap:balance;}
+  #start p{font-family:'IBM Plex Sans','Segoe UI',sans-serif;font-size:14.5px;line-height:1.6;color:var(--dim);max-width:380px;margin:0;}
+  #start .e{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
+  .btn{font-family:'IBM Plex Mono',Consolas,monospace;font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;border-radius:12px;padding:15px 26px;border:0;cursor:pointer;background:var(--accent);color:#062420;box-shadow:0 0 24px rgba(77,232,212,.35);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+</style>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+</head>
+<body>
+
+<div id="start">
+  <div class="e">TecnoScan AR · Pabellón STEM</div>
+  <h1>Apunta al logo y despierta a Nibble</h1>
+  <p>Nibble, el robot del CECEQ, saldrá del logo del Gómez Morín, te saludará y te contará un Tecnodato en voz alta. Necesita tu cámara y el sonido del celular.</p>
+  <button class="btn" id="btn-start" type="button">Activar cámara y sonido</button>
+</div>
+
+<div class="hud">
+  <div>
+    <div class="brand"><div class="e">TecnoScan AR</div><div class="n">El logo cobra vida</div></div>
+  </div>
+  <div class="status" id="status">Buscando cartel</div>
+  <div class="hint" id="hint">Apunta la cámara al logo del cartel</div>
+  <div class="foot"><span>v1 · prueba</span><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
+</div>
+
+<a-scene mindar-image="imageTargetSrc: cartel-logo.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; missTolerance: 4; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
+         color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  <a-light type="ambient" intensity="1.15"></a-light>
+  <a-light type="directional" intensity="1.5" position="0.6 1 1.4"></a-light>
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+  <a-entity id="objetivo" mindar-image-target="targetIndex: 0">
+    <a-entity id="robot" robot-cecq></a-entity>
+  </a-entity>
+</a-scene>
+
+<script>
+(function(){
+  "use strict";
+  var T = AFRAME.THREE;
+
+  var FACTS = [
+    "Un nibble son 4 bits, la mitad de un byte. ¡Por eso me llamo así!",
+    "Un byte son 8 bits: con ellos tu celular guarda una sola letra.",
+    "Un chip moderno guarda miles de millones de transistores en unos pocos milímetros.",
+    "Un código QR sigue funcionando aunque esté un poco dañado.",
+    "La realidad aumentada pone objetos digitales sobre el mundo real, como yo ahora.",
+    "Las redes neuronales aprenden ajustando sus conexiones con muchos ejemplos."
+  ];
+  var LOGO_X = 0, LOGO_Y = -0.033, ROBOT_X = 0, ROBOT_Y = -0.2, ROBOT_Z = 0.2, ROBOT_S = 0.4;
+  var factIdx = -1, firstTime = true;
+  var muted = false, audioCtx = null;
+
+  /* ---------- sonido ---------- */
+  function beep(freq, when, dur, vol){
+    if(!audioCtx || muted) return;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    var t0 = audioCtx.currentTime + when;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol || 0.18, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  function jingle(){ beep(523.25, 0, 0.14); beep(659.25, 0.1, 0.14); beep(783.99, 0.2, 0.2); beep(1046.5, 0.32, 0.3, 0.15); }
+
+  function whoosh(){
+    if(!audioCtx || muted) return;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain(), t0 = audioCtx.currentTime;
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(180, t0); o.frequency.exponentialRampToValueAtTime(900, t0 + 0.45);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + 0.55);
+  }
+
+  function pickVoice(){
+    var vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    var best = null;
+    vs.forEach(function(v){
+      if(/^es[-_]MX/i.test(v.lang) && !best) best = v;
+    });
+    if(!best){ vs.forEach(function(v){ if(/^es/i.test(v.lang) && !best) best = v; }); }
+    return best;
+  }
+
+  /* ---------- utilidades de dibujo ---------- */
+  function rr(x, a, b, w, h, r){
+    r = Math.min(r, w/2, h/2);
+    x.beginPath();
+    x.moveTo(a + r, b); x.lineTo(a + w - r, b); x.quadraticCurveTo(a + w, b, a + w, b + r);
+    x.lineTo(a + w, b + h - r); x.quadraticCurveTo(a + w, b + h, a + w - r, b + h);
+    x.lineTo(a + r, b + h); x.quadraticCurveTo(a, b + h, a, b + h - r);
+    x.lineTo(a, b + r); x.quadraticCurveTo(a, b, a + r, b); x.closePath();
+  }
+  function rbox(w, h, d, r){
+    r = Math.min(r, w/2 - 0.001, h/2 - 0.001, d/2 - 0.001);
+    var W = w - 2*r, H = h - 2*r, x = -W/2, y = -H/2;
+    var s = new T.Shape();
+    s.moveTo(x, y); s.lineTo(x + W, y); s.lineTo(x + W, y + H); s.lineTo(x, y + H); s.lineTo(x, y);
+    var g = new T.ExtrudeGeometry(s, {depth:Math.max(d - 2*r, 0.001), bevelEnabled:true, bevelThickness:r, bevelSize:r, bevelSegments:4, curveSegments:1});
+    g.center();
+    return g;
+  }
+  function easeOutBack(x){ x = Math.max(0, Math.min(1, x)); var c1 = 1.70158, c3 = c1 + 1; return 1 + c3*Math.pow(x - 1, 3) + c1*Math.pow(x - 1, 2); }
+  function wrap(x, text, maxW){
+    var words = text.split(' '), lines = [], line = '';
+    words.forEach(function(w){
+      var test = line ? line + ' ' + w : w;
+      if(x.measureText(test).width > maxW && line){ lines.push(line); line = w; } else { line = test; }
+    });
+    if(line) lines.push(line);
+    return lines;
+  }
+
+  AFRAME.registerComponent('robot-cecq', {
+    init: function(){
+      var self = this;
+      this.root = new T.Group();
+      this.el.setObject3D('robot', this.root);
+      this.root.position.set(ROBOT_X, ROBOT_Y, ROBOT_Z);
+      this.root.scale.setScalar(0.0001);
+      this.active = false; this.t0 = 0; this.eyesOpen = true; this.blinkAt = 2; this.blinkEnd = 0;
+      this.talkUntil = 0; this.faceKey = ''; this.spoken = true; this.waveAmt = 0;
+      this.bubbleText = null;
+      this.build();
+      var obj = document.getElementById('objetivo');
+      obj.addEventListener('targetFound', function(){ self.onFound(); });
+      obj.addEventListener('targetLost', function(){ self.onLost(); });
+      window.addEventListener('click', function(e){
+        if(self.active && !e.target.closest('.sound,#start')) self.nextFact(true);
+      });
+    },
+
+    build: function(){
+      var WHITE = 0xf3f6fb, GRAY = 0xc3ccd8, NAVY = 0x14233f, LIME = 0xb5cc33, MAG = 0xd81b60, BLUE = 0x2196c9, TURQ = 0x4de8d4;
+      var shell = function(c){ return new T.MeshPhysicalMaterial({color:c, roughness:0.3, metalness:0, clearcoat:1, clearcoatRoughness:0.2}); };
+      var flat = function(c, o){ return new T.MeshStandardMaterial(Object.assign({color:c, roughness:0.5, metalness:0.1}, o || {})); };
+      var add = function(geo, m, x, y, z, parent){ var me = new T.Mesh(geo, m); me.position.set(x || 0, y || 0, z || 0); (parent || rig).add(me); return me; };
+      var rig = this.rig = new T.Group(); rig.position.y = 0.4; this.root.add(rig);
+
+      /* cuerpo */
+      add(rbox(0.52, 0.46, 0.38, 0.15), shell(WHITE), 0, 0, 0);
+      add(rbox(0.34, 0.30, 0.03, 0.06), shell(0xffffff), 0, -0.02, 0.19);
+      var logoTex = new T.TextureLoader().load('logo-gm.jpg');
+      logoTex.colorSpace = T.SRGBColorSpace; logoTex.anisotropy = 8;
+      add(new T.PlaneGeometry(0.30, 0.2584), new T.MeshBasicMaterial({map:logoTex}), 0, -0.02, 0.2065);
+      add(new T.CylinderGeometry(0.09, 0.1, 0.07, 24), flat(GRAY), 0, 0.25, 0);
+
+      /* cabeza */
+      var head = this.head = new T.Group(); head.position.y = 0.47; rig.add(head);
+      add(rbox(0.64, 0.46, 0.44, 0.17), shell(WHITE), 0, 0, 0, head);
+      add(rbox(0.54, 0.37, 0.03, 0.11), flat(NAVY, {roughness:0.35, metalness:0.3}), 0, 0, 0.215, head);
+      this.fc = document.createElement('canvas'); this.fc.width = 512; this.fc.height = 344;
+      this.fx = this.fc.getContext('2d');
+      this.faceTex = new T.CanvasTexture(this.fc); this.faceTex.colorSpace = T.SRGBColorSpace; this.faceTex.anisotropy = 8;
+      add(new T.PlaneGeometry(0.50, 0.335), new T.MeshBasicMaterial({map:this.faceTex, transparent:true}), 0, 0, 0.2315, head);
+      this.drawFace(true, 0);
+
+      var earL = add(new T.CylinderGeometry(0.095, 0.095, 0.07, 36), shell(MAG), -0.355, 0, 0, head); earL.rotation.z = Math.PI/2;
+      var earR = add(new T.CylinderGeometry(0.105, 0.105, 0.07, 6), shell(BLUE), 0.355, 0, 0, head); earR.rotation.z = Math.PI/2;
+      add(new T.CylinderGeometry(0.012, 0.012, 0.14, 12), flat(GRAY), 0, 0.30, 0, head);
+      this.topper = add(rbox(0.08, 0.08, 0.08, 0.025), new T.MeshStandardMaterial({color:LIME, emissive:LIME, emissiveIntensity:0.5, roughness:0.35}), 0, 0.4, 0, head);
+
+      /* brazos */
+      var mkArm = function(side){
+        var pivot = new T.Group(); pivot.position.set(0.31*side, 0.08, 0); rig.add(pivot);
+        add(new T.CylinderGeometry(0.05, 0.05, 0.24, 18), shell(WHITE), 0, -0.12, 0, pivot);
+        add(new T.SphereGeometry(0.075, 20, 16), shell(WHITE), 0, -0.26, 0, pivot);
+        add(new T.SphereGeometry(0.052, 18, 14), shell(side > 0 ? LIME : BLUE), 0, -0.05, 0, pivot);
+        return pivot;
+      };
+      this.armR = mkArm(1); this.armL = mkArm(-1);
+
+      /* base flotante */
+      add(new T.CylinderGeometry(0.2, 0.24, 0.04, 40), flat(NAVY, {roughness:0.4, metalness:0.5}), 0, -0.36, 0);
+      var ring = add(new T.TorusGeometry(0.22, 0.012, 10, 60), new T.MeshStandardMaterial({color:TURQ, emissive:TURQ, emissiveIntensity:0.9}), 0, -0.335, 0);
+      ring.rotation.x = Math.PI/2;
+
+      /* globo de texto */
+      this.bc = document.createElement('canvas'); this.bc.width = 768; this.bc.height = 432;
+      this.bx = this.bc.getContext('2d');
+      this.bubbleTex = new T.CanvasTexture(this.bc); this.bubbleTex.colorSpace = T.SRGBColorSpace; this.bubbleTex.anisotropy = 8;
+      this.bubble = new T.Mesh(new T.PlaneGeometry(0.66, 0.371), new T.MeshBasicMaterial({map:this.bubbleTex, transparent:true}));
+      this.bubble.position.set(0, 0.47, 0.3); this.bubble.scale.setScalar(0.0001);
+      this.el.object3D.add(this.bubble);
+      this.rings = [];
+      for(var ri = 0; ri < 2; ri++){
+        var rm = new T.Mesh(new T.RingGeometry(0.28, 0.3, 64), new T.MeshBasicMaterial({color:0x4de8d4, transparent:true, opacity:0, side:T.DoubleSide, depthWrite:false}));
+        rm.position.set(LOGO_X, LOGO_Y, 0.06); rm.scale.setScalar(0.0001);
+        this.el.object3D.add(rm); this.rings.push(rm);
+      }
+    },
+
+    drawFace: function(open, mouth){
+      var x = this.fx, W = 512, H = 344;
+      x.clearRect(0, 0, W, H);
+      var gr = x.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#17356a'); gr.addColorStop(1, '#0a1630');
+      x.fillStyle = gr; rr(x, 0, 0, W, H, 56); x.fill();
+      x.shadowColor = '#4de8d4'; x.shadowBlur = 26; x.fillStyle = '#a4fbf2';
+      var eh = open ? 88 : 12;
+      rr(x, 118, 126 - eh/2, 76, eh, eh > 20 ? 32 : 6); x.fill();
+      rr(x, 318, 126 - eh/2, 76, eh, eh > 20 ? 32 : 6); x.fill();
+      x.shadowBlur = 0;
+      x.fillStyle = 'rgba(216,27,96,.38)';
+      x.beginPath(); x.arc(84, 218, 24, 0, Math.PI*2); x.fill();
+      x.beginPath(); x.arc(428, 218, 24, 0, Math.PI*2); x.fill();
+      x.strokeStyle = '#b5cc33'; x.fillStyle = '#b5cc33'; x.lineWidth = 16; x.lineCap = 'round';
+      if(mouth === 0){ x.beginPath(); x.arc(256, 196, 64, 0.2*Math.PI, 0.8*Math.PI); x.stroke(); }
+      else { var ry = mouth === 1 ? 18 : 36; x.beginPath(); x.ellipse(256, 238, 48, ry, 0, 0, Math.PI*2); x.fill(); }
+      this.faceTex.needsUpdate = true;
+    },
+
+    drawBubble: function(title, body){
+      var x = this.bx, W = 768, H = 432, BH = 360;
+      x.clearRect(0, 0, W, H);
+      x.fillStyle = '#ffffff'; x.strokeStyle = '#14233f'; x.lineWidth = 8;
+      rr(x, 6, 6, W - 12, BH - 12, 54); x.fill(); x.stroke();
+      var tx = W/2 + 30; x.beginPath(); x.moveTo(tx - 70, BH - 8); x.lineTo(tx, H - 8); x.lineTo(tx, BH - 8); x.closePath();
+      x.fill(); x.stroke();
+      x.fillStyle = '#ffffff'; x.fillRect(tx - 66, BH - 14, 62, 12);
+      x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+      x.fillStyle = '#0f8f86'; x.font = '700 46px Arial, Helvetica, sans-serif';
+      x.fillText(title, 46, 88);
+      x.fillStyle = '#14233f'; x.font = '600 43px Arial, Helvetica, sans-serif';
+      var lines = wrap(x, body, W - 96);
+      lines.slice(0, 5).forEach(function(l, i){ x.fillText(l, 46, 154 + i*54); });
+      this.bubbleTex.needsUpdate = true;
+    },
+
+    nextFact: function(manual){
+      factIdx = (factIdx + 1) % FACTS.length;
+      var title = firstTime ? '¡Hola, soy Nibble!' : 'Tecnodato';
+      firstTime = false;
+      this.bubbleText = {title:title, body:FACTS[factIdx]};
+      this.drawBubble(title, FACTS[factIdx]);
+      this.say(title + '. ' + FACTS[factIdx]);
+      if(manual){ jingle(); }
+    },
+
+    say: function(text){
+      var self = this, now = performance.now()/1000;
+      this.talkUntil = now + Math.max(2.2, text.length*0.068);
+      if(muted || !('speechSynthesis' in window)) return;
+      try {
+        speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(text.replace(/nibble/gi, 'níbol'));
+        u.lang = 'es-MX'; u.pitch = 1.4; u.rate = 1.0;
+        var v = pickVoice(); if(v) u.voice = v;
+        u.onend = function(){ self.talkUntil = performance.now()/1000; };
+        speechSynthesis.speak(u);
+      } catch(e){}
+    },
+
+    onFound: function(){
+      this.active = true; this.t0 = performance.now()/1000; this.spoken = false;
+      document.getElementById('status').textContent = 'Cartel detectado';
+      document.getElementById('status').className = 'status ok';
+      document.getElementById('hint').hidden = true;
+      whoosh(); setTimeout(jingle, 380);
+    },
+    onLost: function(){
+      this.active = false;
+      this.root.scale.setScalar(0.0001); this.bubble.scale.setScalar(0.0001);
+      this.rings.forEach(function(r){ r.scale.setScalar(0.0001); });
+      this.talkUntil = 0;
+      try { if('speechSynthesis' in window) speechSynthesis.cancel(); } catch(e){}
+      document.getElementById('status').textContent = 'Buscando cartel';
+      document.getElementById('status').className = 'status';
+      document.getElementById('hint').hidden = false;
+    },
+
+    tick: function(){
+      if(!this.active) return;
+      var t = performance.now()/1000, age = t - this.t0;
+      var e = Math.max(0, Math.min(1, age/1.1)), rise = 1 - Math.pow(1 - e, 3);
+      this.root.scale.setScalar(Math.max(0.0001, ROBOT_S*easeOutBack(age/1.0)));
+      this.root.position.set(LOGO_X + (ROBOT_X - LOGO_X)*rise, LOGO_Y + (ROBOT_Y - LOGO_Y)*rise, ROBOT_Z);
+      for(var ri = 0; ri < this.rings.length; ri++){
+        var lt = age - ri*0.35, rg = this.rings[ri];
+        if(lt >= 0 && lt <= 1.2){ rg.scale.setScalar(0.2 + 1.1*(lt/1.2)); rg.material.opacity = 0.85*(1 - lt/1.2); }
+        else { rg.scale.setScalar(0.0001); }
+      }
+      if(!this.spoken && age > 1.0){ this.spoken = true; this.nextFact(false); }
+      var bs = this.bubbleText ? easeOutBack((age - 1.1)/0.5) : 0;
+      this.bubble.scale.setScalar(Math.max(0.0001, bs));
+
+      this.rig.position.y = 0.4 + Math.sin(t*2)*0.025;
+      this.rig.rotation.y = Math.sin(t*0.9)*0.14 + (1 - rise)*Math.PI*2;
+      this.head.rotation.z = Math.sin(t*1.3)*0.05;
+      this.topper.material.emissiveIntensity = 0.45 + 0.4*Math.sin(t*4);
+
+      var talking = t < this.talkUntil;
+      var wantWave = (age % 9) < 3.2 || talking;
+      this.waveAmt += ((wantWave ? 1 : 0) - this.waveAmt)*0.12;
+      this.armR.rotation.z = (1 - this.waveAmt)*0.22 + this.waveAmt*(2.55 + Math.sin(age*9)*0.3);
+      this.armL.rotation.z = -0.22 - Math.sin(t*1.6)*0.05;
+
+      if(t > this.blinkAt){ this.eyesOpen = false; this.blinkEnd = t + 0.13; this.blinkAt = t + 2.2 + Math.random()*2.6; }
+      if(!this.eyesOpen && t > this.blinkEnd) this.eyesOpen = true;
+      var mouth = talking ? 1 + (Math.floor(t*8) % 2) : 0;
+      var key = (this.eyesOpen ? 1 : 0) + ':' + mouth;
+      if(key !== this.faceKey){ this.faceKey = key; this.drawFace(this.eyesOpen, mouth); }
+    }
+  });
+
+  /* ---------- arranque ---------- */
+  document.getElementById('btn-start').addEventListener('click', function(){
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
+    try { if('speechSynthesis' in window){ var u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); speechSynthesis.getVoices(); } } catch(e){}
+    document.getElementById('start').hidden = true;
+    var sys = document.querySelector('a-scene').systems['mindar-image-system'];
+    sys.start();
+  });
+  document.getElementById('btn-sound').addEventListener('click', function(){
+    muted = !muted;
+    this.textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    if(muted){ try { speechSynthesis.cancel(); } catch(e){} }
+  });
+})();
+</script>
+</body>
+</html>
