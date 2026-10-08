@@ -248,10 +248,18 @@
     <div class="btn-row">
       <button type="button" class="btn btn-primary" id="btn-again">Jugar otra vez</button>
       <a class="btn btn-ghost" href="index.html">Ver hologramas AR</a>
+      <button type="button" class="btn btn-ghost" id="btn-rec">Mi reconocimiento (QR)</button>
+    </div>
+    <div class="panel" id="rec-panel" hidden style="align-items:center;text-align:center;">
+      <div class="label">Reconocimiento por participar</div>
+      <div id="rec-qr" style="background:#fff;padding:12px;border-radius:14px;line-height:0;"></div>
+      <p class="lede" style="max-width:34ch;">Escanea este código con tu celular para ver y descargar tu reconocimiento.</p>
+      <a class="foot-link" id="rec-link" href="#" target="_blank" rel="noopener">Abrir aquí mismo</a>
     </div>
   </section>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -301,6 +309,7 @@
   var qStart = 0, raf = 0, locked = false, cur = null;
   var kiosk = /[?&]kiosco/.test(location.search);
   var KEY = 'tecnoscan_ranking_v1';
+  var lastTs = 0, kioskTimer = 0;
 
   function show(el){ [sStart, sQ, sEnd, sGuia].forEach(function(s){ s.hidden = (s !== el); }); window.scrollTo(0,0); }
   function shuffle(a){ a = a.slice(); for(var i=a.length-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -432,8 +441,11 @@
     }).join('');
     $('end-when').textContent = nick + ' · ' + new Date(ts).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'});
     renderBoard($('board-end'), ts);
+    lastTs = ts;
+    $('rec-panel').hidden = true;
     show(sEnd);
-    if(kiosk){ setTimeout(function(){ if(!sEnd.hidden) toStart(); }, 30000); }
+    clearTimeout(kioskTimer);
+    if(kiosk){ kioskTimer = setTimeout(function(){ if(!sEnd.hidden) toStart(); }, 30000); }
   }
 
   function toStart(){
@@ -472,6 +484,19 @@
   $('nick').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ start(); } });
   $('btn-next').addEventListener('click', function(){ idx++; nextQuestion(); });
   $('btn-again').addEventListener('click', toStart);
+  $('btn-rec').addEventListener('click', function(){
+    var url = new URL('reconocimiento.html', location.href);
+    url.search = new URLSearchParams({n:nick, p:score, v:level, f:Math.floor(lastTs/1000).toString(36)}).toString();
+    var box = $('rec-qr');
+    box.innerHTML = '';
+    if(window.QRCode){ new QRCode(box, {text:url.href, width:220, height:220, correctLevel:QRCode.CorrectLevel.M}); }
+    else { box.innerHTML = '<span style="color:#111;font-size:13px;line-height:1.4;">No se pudo cargar el generador de QR.</span>'; }
+    $('rec-link').href = url.href;
+    $('rec-panel').hidden = false;
+    $('rec-panel').scrollIntoView({behavior:'smooth', block:'center'});
+    clearTimeout(kioskTimer);
+    if(kiosk){ kioskTimer = setTimeout(function(){ if(!sEnd.hidden) toStart(); }, 120000); }
+  });
   lvButtons();
   toStart();
   if(/[?&]marcador/.test(location.search)){ renderRound(); show(sGuia); }
