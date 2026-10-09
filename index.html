@@ -1493,6 +1493,7 @@
   document.getElementById('btn-nocam').addEventListener('click', function(){
     startExperience(false);
   });
+  if(new URLSearchParams(location.search).get('sincamara') === '1'){ startExperience(false); }
 
 })();
 </script>

@@ -239,6 +239,11 @@
   }
   footer b{color:var(--text);font-weight:500;}
 
+  .nocam-row{display:flex;flex-direction:column;align-items:center;gap:8px;margin:2px 0 4px;text-align:center;}
+  .nocam-row p{margin:0;font-size:13.5px;color:var(--text-dim);}
+  .btn-nocam{display:inline-block;font-family:'IBM Plex Mono',Consolas,monospace;font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;text-decoration:none;color:#062420;background:var(--accent);border-radius:12px;padding:14px 24px;box-shadow:0 0 22px rgba(77,232,212,.3);}
+  .btn-nocam:hover{filter:brightness(1.08);}
+  @media print{.nocam-row{display:none;}}
   @media (max-width:520px){
     .topics{grid-template-columns:1fr;}
   }
@@ -269,13 +274,18 @@
       </div>
       <div class="step">
         <div class="num">2</div>
-        <div><h3>Activá la cámara AR</h3><p>El navegador va a pedir permiso de cámara: aceptalo para ver los hologramas superpuestos.</p></div>
+        <div><h3>Activá la cámara AR</h3><p>El navegador va a pedir permiso de cámara: aceptalo para ver los hologramas superpuestos. Si prefieres no usarla, toca «Ver sin cámara».</p></div>
       </div>
       <div class="step">
         <div class="num">3</div>
         <div><h3>Explora y gira</h3><p>Desliza el dedo sobre la pantalla para rotar cada modelo y usa las flechas para cambiar de pieza.</p></div>
       </div>
     </div>
+  </div>
+
+  <div class="nocam-row">
+    <p>¿Prefieres no usar la cámara? También puedes verlo directo en tu pantalla.</p>
+    <a class="btn-nocam" id="btn-nocam" href="index.html?sincamara=1">Ver sin cámara</a>
   </div>
 
   <div class="topics">
