@@ -147,6 +147,21 @@
   .msg.bad{color:var(--bad);}
   .foot-link{align-self:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);background:none;border:0;cursor:pointer;text-decoration:underline;padding:6px;}
   .board.big li{font-size:18px;padding:13px 14px;}
+
+  /* juego en grupo */
+  .app.wide{max-width:980px;}
+  .codebig{font-family:var(--font-display);font-weight:700;font-size:clamp(54px,16vw,120px);letter-spacing:.12em;color:var(--accent);line-height:1;}
+  .hgrid{display:grid;grid-template-columns:1fr;gap:18px;}
+  @media(min-width:760px){.hgrid{grid-template-columns:1fr 240px;align-items:center;}}
+  .jchips{display:flex;flex-wrap:wrap;gap:8px;}
+  .jchips .chip{font-size:14px;color:var(--text);font-family:var(--font-body);}
+  .ans.static{cursor:default;min-height:92px;}
+  .ans .cnt{position:absolute;right:12px;top:10px;font-family:var(--font-mono);font-size:18px;font-weight:600;}
+  .ans.pick{box-shadow:0 0 0 4px #fff;}
+  .hq-text{font-family:var(--font-display);font-weight:600;font-size:clamp(22px,4.2vw,36px);line-height:1.22;margin:0;text-wrap:balance;}
+  .pos-big{font-family:var(--font-display);font-weight:700;font-size:clamp(40px,12vw,64px);color:var(--accent);line-height:1;}
+  .board li.top1{border-color:var(--gold);}
+  .wait{color:var(--text-dim);font-size:15px;text-align:center;margin:8px 0;}
 </style>
 </head>
 <body>
@@ -172,6 +187,14 @@
         <button type="button" class="level" data-lv="2" aria-pressed="false"><span class="shape" style="color:var(--c-c)">⬢</span><b>Experto</b><small>Docentes y adultos</small></button>
       </div>
       <button type="button" class="btn btn-primary" id="btn-start">Comenzar expedición</button>
+    </div>
+    <div class="panel">
+      <div class="label">Juego en grupo · como Kahoot</div>
+      <p class="lede" style="font-size:14px;">Una persona crea el juego y proyecta la pantalla; el resto entra con un código desde su celular.</p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="btn-crear">Crear juego</button>
+        <button type="button" class="btn btn-ghost" id="btn-unirme">Unirme con código</button>
+      </div>
     </div>
     <div class="panel">
       <div class="label">Mejores puntajes en este equipo</div>
@@ -220,6 +243,129 @@
     </div>
   </section>
 
+  <!-- UNIRME -->
+  <section id="s-join" hidden style="display:flex;flex-direction:column;gap:18px;">
+    <h1>Unirme a un <span>juego</span></h1>
+    <p class="lede">Pide el código de 4 dígitos a quien presenta el juego.</p>
+    <div class="panel">
+      <label class="label" for="j-code">Código del juego</label>
+      <input type="text" id="j-code" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000">
+      <label class="label" for="j-name">Tu nombre</label>
+      <input type="text" id="j-name" maxlength="14" autocomplete="off" placeholder="Ej. Ana">
+      <button type="button" class="btn btn-primary" id="btn-join">Entrar</button>
+      <p class="msg" id="j-msg" hidden></p>
+    </div>
+    <button type="button" class="foot-link" id="btn-join-back">Volver</button>
+  </section>
+
+  <!-- ANFITRIÓN -->
+  <section id="s-host" hidden style="display:flex;flex-direction:column;gap:18px;">
+    <div id="h-lobby" style="display:flex;flex-direction:column;gap:18px;">
+      <div class="label">Juego en grupo · anfitrión</div>
+      <div class="hgrid">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="label">Código del juego</div>
+          <div class="codebig" id="h-code">0000</div>
+          <p class="lede">Entra a <b id="h-url" style="color:var(--text);word-break:break-all;"></b>, toca <b style="color:var(--text);">Unirme con código</b> o escanea el QR.</p>
+        </div>
+        <div id="h-qr" style="background:#fff;padding:12px;border-radius:14px;line-height:0;justify-self:center;"></div>
+      </div>
+      <div class="panel">
+        <div class="label">Nivel de preguntas</div>
+        <div class="levels" id="h-levels">
+          <button type="button" class="level" data-lv="1" aria-pressed="true"><span class="shape" style="color:var(--c-b)">■</span><b>Creador</b><small>Media superior</small></button>
+          <button type="button" class="level" data-lv="2" aria-pressed="false"><span class="shape" style="color:var(--c-c)">⬢</span><b>Experto</b><small>Docentes y adultos</small></button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label">Jugadores · <span id="h-count">0</span></div>
+        <div class="jchips" id="h-players"></div>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="h-start" disabled>Iniciar juego</button>
+        <button type="button" class="btn btn-ghost" id="h-cancel">Cancelar juego</button>
+      </div>
+    </div>
+
+    <div id="h-q" hidden style="display:flex;flex-direction:column;gap:14px;">
+      <div class="hud">
+        <span class="chip">Pregunta <b id="hq-num">1/8</b></span>
+        <span class="chip" id="hq-count">0 de 0 han respondido</span>
+        <span class="chip">Tiempo <b id="hq-left">20</b></span>
+      </div>
+      <div class="timer" id="hq-timer" aria-hidden="true"><i id="hq-bar"></i></div>
+      <div class="label cat" id="hq-cat"></div>
+      <h2 class="hq-text" id="hq-text"></h2>
+      <div class="answers" id="hq-answers"></div>
+    </div>
+
+    <div id="h-res" hidden style="display:flex;flex-direction:column;gap:14px;">
+      <div class="hud"><span class="chip">Pregunta <b id="hr-num">1/8</b></span><span class="chip" id="hr-ok"></span></div>
+      <h2 class="hq-text" id="hr-text"></h2>
+      <div class="answers" id="hr-answers"></div>
+      <div class="fb"><h3>¿Sabías que…?</h3><p id="hr-fact"></p></div>
+      <div class="panel"><div class="label">Clasificación</div><ol class="board" id="hr-board"></ol></div>
+      <button type="button" class="btn btn-primary" id="h-next">Siguiente pregunta</button>
+    </div>
+
+    <div id="h-fin" hidden style="display:flex;flex-direction:column;gap:14px;">
+      <div class="label">Juego terminado</div>
+      <h1>¡Gracias por <span>jugar</span>!</h1>
+      <div class="panel"><div class="label">Clasificación final</div><ol class="board big" id="hf-board"></ol></div>
+      <p class="lede">Cada jugador puede descargar su reconocimiento desde su propio celular.</p>
+      <button type="button" class="btn btn-primary" id="h-new">Nueva partida</button>
+    </div>
+  </section>
+
+  <!-- JUGADOR EN GRUPO -->
+  <section id="s-play" hidden style="display:flex;flex-direction:column;gap:16px;">
+    <div id="p-lobby" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="label">Juego <span id="pl-code"></span></div>
+      <h1>¡Estás <span>dentro</span>, <span id="pl-name"></span>!</h1>
+      <p class="lede">Espera a que la persona anfitriona inicie el juego. Ya hay <b id="pl-count" style="color:var(--text);">1</b> jugador(es).</p>
+      <button type="button" class="foot-link" id="p-leave1">Salir del juego</button>
+    </div>
+
+    <div id="p-q" hidden style="display:flex;flex-direction:column;gap:14px;">
+      <div class="hud">
+        <span class="chip">Pregunta <b id="pq-num">1/8</b></span>
+        <span class="chip">Puntos <b id="pq-score">0</b></span>
+      </div>
+      <div class="timer" id="pq-timer" aria-hidden="true"><i id="pq-bar"></i></div>
+      <div class="label cat" id="pq-cat"></div>
+      <h2 class="qtext" id="pq-text"></h2>
+      <div class="answers" id="pq-answers"></div>
+      <p class="wait" id="pq-wait" hidden>Respuesta enviada. Esperando al resto…</p>
+    </div>
+
+    <div id="p-res" hidden style="display:flex;flex-direction:column;gap:14px;">
+      <div class="fb" id="pr-fb"><h3 id="pr-title"></h3><p id="pr-correct"></p><p id="pr-fact"></p></div>
+      <div class="panel" style="align-items:center;text-align:center;">
+        <div class="label">Tu posición</div>
+        <div class="pos-big" id="pr-pos">1.º</div>
+        <div class="chip"><b id="pr-pts">0</b> puntos</div>
+      </div>
+      <p class="wait">Espera la siguiente pregunta…</p>
+    </div>
+
+    <div id="p-fin" hidden style="display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <div class="label" id="pf-title">Resultado final</div>
+        <div class="score" id="pf-score">0</div>
+      </div>
+      <div class="stats">
+        <span class="chip">Lugar <b id="pf-pos">1.º</b> de <b id="pf-total">1</b></span>
+        <span class="chip">Aciertos <b id="pf-ok">0</b>/<b id="pf-q">8</b></span>
+        <span class="chip">Mejor racha <b id="pf-streak">0</b></span>
+      </div>
+      <div class="panel"><div class="label">Mejores puntajes</div><ol class="board" id="pf-board"></ol></div>
+      <div class="btn-row">
+        <a class="btn btn-primary" id="pf-rec" href="#" target="_blank" rel="noopener">Ver y descargar mi reconocimiento</a>
+        <button type="button" class="btn btn-ghost" id="p-leave2">Salir</button>
+      </div>
+    </div>
+  </section>
+
   <!-- FINAL -->
   <section id="s-end" hidden style="display:flex;flex-direction:column;gap:18px;">
     <div>
@@ -259,6 +405,8 @@
   </section>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function(){
@@ -311,7 +459,7 @@
   var KEY = 'tecnoscan_ranking_v1';
   var lastTs = 0, kioskTimer = 0;
 
-  function show(el){ [sStart, sQ, sEnd, sGuia].forEach(function(s){ s.hidden = (s !== el); }); window.scrollTo(0,0); }
+  function show(el){ [sStart, sQ, sEnd, sGuia, sJoin, sHost, sPlay].forEach(function(s){ s.hidden = (s !== el); }); document.querySelector('.app').classList.toggle('wide', el === sHost); window.scrollTo(0,0); }
   function shuffle(a){ a = a.slice(); for(var i=a.length-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
 
@@ -497,9 +645,359 @@
     clearTimeout(kioskTimer);
     if(kiosk){ kioskTimer = setTimeout(function(){ if(!sEnd.hidden) toStart(); }, 120000); }
   });
+  /* =====================================================================
+     JUEGO EN GRUPO (tiempo real con Firebase Realtime Database)
+     juegos/{codigo}/meta  estado, nivel, q, total, t0, creado
+     juegos/{codigo}/preg  orden de preguntas y de respuestas
+     juegos/{codigo}/jug   jugadores y puntajes (los calcula el anfitrión)
+     juegos/{codigo}/resp  respuestas de cada jugador por pregunta
+     ===================================================================== */
+  var FBCFG = {
+    apiKey: "AIzaSyAgj3LmQNiGrnbZMKyZVxghBLheFqPcOIk",
+    authDomain: "tecnoscan-reto.firebaseapp.com",
+    databaseURL: "https://tecnoscan-reto-default-rtdb.firebaseio.com",
+    projectId: "tecnoscan-reto",
+    storageBucket: "tecnoscan-reto.firebasestorage.app",
+    messagingSenderId: "779911937225",
+    appId: "1:779911937225:web:85f2a4f7bfc5b1351f6118"
+  };
+  var sHost = $('s-host'), sJoin = $('s-join'), sPlay = $('s-play');
+  var db = null, offset = 0, G = null, MPK = 'tecnoscan_grupo_v1';
+  var UID = (function(){
+    try { var u = sessionStorage.getItem('tecnoscan_uid'); if(!u){ u = 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); sessionStorage.setItem('tecnoscan_uid', u); } return u; }
+    catch(e){ return 'u' + Math.random().toString(36).slice(2, 12); }
+  })();
+
+  function fbInit(){
+    if(db) return true;
+    if(!window.firebase || !firebase.database) return false;
+    try {
+      firebase.initializeApp(FBCFG);
+      db = firebase.database();
+      db.ref('.info/serverTimeOffset').on('value', function(s){ offset = s.val() || 0; });
+      return true;
+    } catch(e){ return false; }
+  }
+  function srvNow(){ return Date.now() + offset; }
+  function TS(){ return firebase.database.ServerValue.TIMESTAMP; }
+  function saveMP(o){ try { sessionStorage.setItem(MPK, JSON.stringify(o)); } catch(e){} }
+  function listen(ref, fn){ ref.on('value', fn); G.refs.push(ref); }
+  function gClear(){
+    if(!G) return;
+    clearInterval(G.tick);
+    G.refs.forEach(function(r){ try { r.off(); } catch(e){} });
+    G = null;
+  }
+  function leaveGroup(){
+    gClear();
+    try { sessionStorage.removeItem(MPK); } catch(e){}
+    toStart();
+  }
+  function noConn(){ alert('No se pudo conectar con el servicio de juego. Revisa tu conexión a internet e inténtalo de nuevo.'); }
+
+  function sortedPlayers(jug){
+    return Object.keys(jug || {}).map(function(id){
+      var j = jug[id];
+      return {id:id, n:j.n || '—', pts:j.pts || 0, ok:j.ok || 0, mejor:j.mejor || 0, ult:j.ult || 0, okUlt:j.okUlt};
+    }).sort(function(a, b){ return b.pts - a.pts || a.n.localeCompare(b.n); });
+  }
+  function boardHTML(list, meId, max){
+    var rows = list.slice(0, max);
+    if(meId){
+      var mi = list.findIndex(function(p){ return p.id === meId; });
+      if(mi >= max){ rows = rows.concat([list[mi]]); }
+    }
+    if(!rows.length) return '<p class="empty">Aún no hay jugadores.</p>';
+    return rows.map(function(p){
+      var pos = list.indexOf(p) + 1;
+      return '<li class="' + (p.id === meId ? 'me' : (pos === 1 ? 'top1' : '')) + '"><span class="pos">' + pos + '</span><span>' + esc(p.n) + '</span><span class="pts">' + p.pts + '</span></li>';
+    }).join('');
+  }
+  function ordinal(n){ return n + '.º'; }
+  function qOf(m, preg, qi){
+    if(!preg || !preg[qi]) return null;
+    var pr = preg[qi], item = BANK[m.nivel][pr.i];
+    return {item:item, order:pr.p, correct:pr.p.indexOf(0), cat:CATS[item.c]};
+  }
+  function recUrl(name, pts, nivel, creado){
+    var u = new URL('reconocimiento.html', location.href);
+    u.search = new URLSearchParams({n:name, p:pts, v:nivel, f:Math.floor(creado/1000).toString(36)}).toString();
+    return u.href;
+  }
+  function showView(prefix, ids, active){ ids.forEach(function(id){ $(prefix + id).hidden = (id !== active); }); }
+
+  /* ---------------- anfitrión ---------------- */
+  function hostCreate(){
+    if(!fbInit()){ noConn(); return; }
+    (function tryCode(n){
+      var code = String(1000 + Math.floor(Math.random() * 9000));
+      db.ref('juegos/' + code + '/meta').once('value').then(function(s){
+        if(s.exists() && n < 8){ return tryCode(n + 1); }
+        return db.ref('juegos/' + code + '/meta').set({estado:'lobby', nivel:1, q:-1, total:0, creado:TS(), host:UID}).then(function(){
+          saveMP({role:'host', code:code}); hostOpen(code);
+        });
+      }).catch(noConn);
+    })(0);
+  }
+
+  function hostOpen(code){
+    gClear();
+    G = {role:'host', code:code, base:db.ref('juegos/' + code), meta:null, jug:{}, resp:{}, preg:null, refs:[], revealing:false, qShown:-1, qr:false};
+    listen(G.base.child('meta'), function(s){ G.meta = s.val(); hostRender(); });
+    listen(G.base.child('jug'), function(s){ G.jug = s.val() || {}; hostRender(); });
+    listen(G.base.child('resp'), function(s){ G.resp = s.val() || {}; hostRender(); });
+    listen(G.base.child('preg'), function(s){ G.preg = s.val() || null; hostRender(); });
+    G.tick = setInterval(hostTick, 250);
+    show(sHost);
+  }
+
+  function hostRender(){
+    if(!G || G.role !== 'host' || !G.meta) return;
+    var m = G.meta, st = m.estado, players = sortedPlayers(G.jug);
+    var map = {lobby:'lobby', pregunta:'q', resultado:'res', final:'fin'};
+    ['lobby', 'q', 'res', 'fin'].forEach(function(k){ $('h-' + k).hidden = (k !== map[st]); });
+
+    if(st === 'lobby'){
+      $('h-code').textContent = G.code;
+      var link = location.origin + location.pathname + '?codigo=' + G.code;
+      $('h-url').textContent = (location.host + location.pathname).replace(/^\/+/, '');
+      if(!G.qr){ G.qr = true; $('h-qr').innerHTML = ''; new QRCode($('h-qr'), {text:link, width:200, height:200, correctLevel:QRCode.CorrectLevel.M}); }
+      $('h-count').textContent = players.length;
+      $('h-players').innerHTML = players.length ? players.map(function(p){ return '<span class="chip">' + esc(p.n) + '</span>'; }).join('') : '<p class="empty">Esperando jugadores…</p>';
+      Array.prototype.forEach.call(document.querySelectorAll('#h-levels .level'), function(b){ b.setAttribute('aria-pressed', (+b.getAttribute('data-lv') === m.nivel) ? 'true' : 'false'); });
+      $('h-start').disabled = players.length < 1;
+      return;
+    }
+
+    var q = qOf(m, G.preg, m.q);
+    if(!q) return;
+
+    if(st === 'pregunta'){
+      if(G.qShown !== m.q){
+        G.qShown = m.q;
+        $('hq-num').textContent = (m.q + 1) + '/' + m.total;
+        $('hq-cat').innerHTML = '<i style="color:' + q.cat.c + '">' + q.cat.g + '</i>Artefacto · ' + q.cat.n;
+        $('hq-text').textContent = q.item.q;
+        $('hq-answers').innerHTML = q.order.map(function(o, k){
+          return '<div class="ans static" data-k="' + k + '"><span class="shape" aria-hidden="true">' + SHAPES[k] + '</span><span>' + esc(q.item.a[o]) + '</span></div>';
+        }).join('');
+      }
+      var a = Object.keys((G.resp || {})[m.q] || {}).length;
+      $('hq-count').textContent = a + ' de ' + players.length + ' han respondido';
+    } else if(st === 'resultado'){
+      var rs = (G.resp || {})[m.q] || {}, counts = [0, 0, 0, 0];
+      Object.keys(rs).forEach(function(id){ if(rs[id] && counts[rs[id].k] !== undefined) counts[rs[id].k]++; });
+      $('hr-num').textContent = (m.q + 1) + '/' + m.total;
+      $('hr-ok').textContent = counts[q.correct] + ' acertaron';
+      $('hr-text').textContent = q.item.q;
+      $('hr-answers').innerHTML = q.order.map(function(o, k){
+        return '<div class="ans static ' + (k === q.correct ? 'right' : 'dim') + '" data-k="' + k + '"><span class="shape" aria-hidden="true">' + SHAPES[k] + '</span><span>' + esc(q.item.a[o]) + '</span><span class="cnt">' + counts[k] + '</span></div>';
+      }).join('');
+      $('hr-fact').textContent = q.item.f;
+      $('hr-board').innerHTML = boardHTML(players, null, 5);
+      $('h-next').textContent = (m.q + 1 >= m.total) ? 'Ver resultado final' : 'Siguiente pregunta';
+    } else if(st === 'final'){
+      $('hf-board').innerHTML = boardHTML(players, null, 50);
+    }
+  }
+
+  function hostTick(){
+    if(!G || !G.meta || G.meta.estado !== 'pregunta' || !G.meta.t0) return;
+    var m = G.meta, left = Math.max(0, T - (srvNow() - m.t0) / 1000);
+    $('hq-bar').style.transform = 'scaleX(' + (left / T) + ')';
+    $('hq-timer').classList.toggle('low', left <= 5);
+    $('hq-left').textContent = Math.ceil(left);
+    var n = Object.keys(G.jug).length, a = Object.keys((G.resp || {})[m.q] || {}).length;
+    if(left <= 0 || (n > 0 && a >= n)) hostReveal();
+  }
+
+  function hostStart(){
+    if(!G || !G.meta || G.meta.estado !== 'lobby' || !Object.keys(G.jug).length) return;
+    var m = G.meta, bank = BANK[m.nivel];
+    var order = shuffle(bank.map(function(_, i){ return i; }));
+    var preg = order.map(function(i){ return {i:i, p:shuffle([0, 1, 2, 3])}; });
+    var upd = {preg:preg, resp:null, 'meta/total':preg.length, 'meta/q':0, 'meta/estado':'pregunta', 'meta/t0':TS()};
+    Object.keys(G.jug).forEach(function(id){
+      upd['jug/' + id + '/pts'] = 0; upd['jug/' + id + '/racha'] = 0; upd['jug/' + id + '/mejor'] = 0; upd['jug/' + id + '/ok'] = 0; upd['jug/' + id + '/ult'] = 0; upd['jug/' + id + '/okUlt'] = null;
+    });
+    G.qShown = -1;
+    G.base.update(upd);
+  }
+
+  function hostReveal(){
+    if(!G || G.revealing || G.meta.estado !== 'pregunta') return;
+    G.revealing = true;
+    var m = G.meta, q = qOf(m, G.preg, m.q);
+    if(!q){ G.revealing = false; return; }
+    G.base.child('resp/' + m.q).once('value').then(function(snap){
+      var resp = snap.val() || {}, upd = {};
+      Object.keys(G.jug).forEach(function(id){
+        var j = G.jug[id], r = resp[id], pts = j.pts || 0, racha = j.racha || 0, okc = j.ok || 0, mejor = j.mejor || 0, gained = 0, ok = false;
+        if(r){
+          var el = Math.max(0, (r.t - m.t0) / 1000);
+          if(r.k === q.correct && el <= T + 2){
+            ok = true; racha++; okc++; mejor = Math.max(mejor, racha);
+            gained = Math.round(1000 * (1 - (Math.min(T, el) / T) / 2)) + Math.min(500, Math.max(0, racha - 1) * 100);
+            pts += gained;
+          }
+        }
+        if(!ok) racha = 0;
+        upd['jug/' + id + '/pts'] = pts; upd['jug/' + id + '/racha'] = racha; upd['jug/' + id + '/ok'] = okc; upd['jug/' + id + '/mejor'] = mejor;
+        upd['jug/' + id + '/ult'] = gained; upd['jug/' + id + '/okUlt'] = ok; upd['jug/' + id + '/resp'] = r ? r.k : -1;
+      });
+      upd['meta/estado'] = 'resultado';
+      return G.base.update(upd);
+    }).then(function(){ if(G) G.revealing = false; }, function(){ if(G) G.revealing = false; });
+  }
+
+  function hostNext(){
+    if(!G || !G.meta || G.meta.estado !== 'resultado') return;
+    var m = G.meta;
+    if(m.q + 1 < m.total){ G.base.update({'meta/q':m.q + 1, 'meta/estado':'pregunta', 'meta/t0':TS()}); }
+    else { G.base.child('meta/estado').set('final'); }
+  }
+
+  /* ---------------- jugador ---------------- */
+  function jmsg(t){ var m = $('j-msg'); m.hidden = false; m.className = 'msg bad'; m.textContent = t; }
+
+  function joinSubmit(){
+    var code = $('j-code').value.replace(/\D/g, '').slice(0, 4), name = $('j-name').value.trim().slice(0, 14);
+    if(code.length !== 4 || !name){ jmsg('Escribe el código de 4 dígitos y tu nombre.'); return; }
+    if(!fbInit()){ noConn(); return; }
+    $('j-msg').hidden = true;
+    db.ref('juegos/' + code + '/meta').once('value').then(function(s){
+      var m = s.val();
+      if(!m){ jmsg('No encontré ese juego. Revisa el código.'); return; }
+      if(m.estado !== 'lobby'){ jmsg('Ese juego ya empezó. Pide a la persona anfitriona que cree uno nuevo.'); return; }
+      return db.ref('juegos/' + code + '/jug/' + UID).set({n:name, pts:0, racha:0, mejor:0, ok:0, ult:0}).then(function(){
+        saveMP({role:'player', code:code}); playerOpen(code);
+      });
+    }).catch(noConn);
+  }
+
+  function playerOpen(code){
+    gClear();
+    G = {role:'player', code:code, base:db.ref('juegos/' + code), meta:null, jug:{}, preg:null, refs:[], qShown:-1, answered:false, chosen:-1};
+    listen(G.base.child('meta'), function(s){ G.meta = s.val(); playerRender(); });
+    listen(G.base.child('jug'), function(s){ G.jug = s.val() || {}; playerRender(); });
+    listen(G.base.child('preg'), function(s){ G.preg = s.val() || null; playerRender(); });
+    G.tick = setInterval(playerTick, 150);
+    show(sPlay);
+  }
+
+  function lockAnswers(chosen){
+    Array.prototype.forEach.call($('pq-answers').children, function(b, k){
+      b.disabled = true;
+      b.classList.toggle('dim', k !== chosen);
+      b.classList.toggle('pick', k === chosen);
+    });
+  }
+
+  function answerMP(k){
+    if(!G || G.answered) return;
+    G.answered = true; G.chosen = k;
+    lockAnswers(k);
+    $('pq-wait').hidden = false;
+    G.base.child('resp/' + G.meta.q + '/' + UID).set({k:k, t:TS()});
+  }
+
+  function playerRender(){
+    if(!G || G.role !== 'player' || !G.meta) return;
+    var m = G.meta, st = m.estado, me = G.jug[UID];
+    if(!me){ return; }
+    var list = sortedPlayers(G.jug), rank = list.findIndex(function(p){ return p.id === UID; }) + 1;
+    var map = {lobby:'lobby', pregunta:'q', resultado:'res', final:'fin'};
+    ['lobby', 'q', 'res', 'fin'].forEach(function(k){ $('p-' + k).hidden = (k !== map[st]); });
+
+    if(st === 'lobby'){
+      $('pl-code').textContent = G.code; $('pl-name').textContent = me.n; $('pl-count').textContent = list.length;
+      return;
+    }
+    var q = qOf(m, G.preg, m.q);
+
+    if(st === 'pregunta'){
+      if(!q) return;
+      if(G.qShown !== m.q){
+        G.qShown = m.q; G.answered = false; G.chosen = -1;
+        $('pq-num').textContent = (m.q + 1) + '/' + m.total;
+        $('pq-cat').innerHTML = '<i style="color:' + q.cat.c + '">' + q.cat.g + '</i>Artefacto · ' + q.cat.n;
+        $('pq-text').textContent = q.item.q;
+        $('pq-wait').hidden = true;
+        var wrap = $('pq-answers'); wrap.innerHTML = '';
+        q.order.forEach(function(o, k){
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'ans'; b.setAttribute('data-k', k);
+          b.innerHTML = '<span class="shape" aria-hidden="true">' + SHAPES[k] + '</span><span>' + esc(q.item.a[o]) + '</span>';
+          b.addEventListener('click', function(){ answerMP(k); });
+          wrap.appendChild(b);
+        });
+        var qi = m.q;
+        G.base.child('resp/' + qi + '/' + UID).once('value').then(function(s){
+          if(s.exists() && G && G.qShown === qi && !G.answered){ G.answered = true; G.chosen = s.val().k; lockAnswers(G.chosen); $('pq-wait').hidden = false; }
+        });
+      }
+      $('pq-score').textContent = me.pts || 0;
+    } else if(st === 'resultado'){
+      if(!q) return;
+      var ok = !!me.okUlt, none = me.resp === -1;
+      $('pr-fb').className = 'fb ' + (ok ? 'ok' : 'no');
+      $('pr-title').textContent = ok ? ('¡Correcto! +' + me.ult) : (none ? 'Se acabó el tiempo' : 'Casi, esta vez no');
+      $('pr-correct').textContent = 'Respuesta correcta: ' + q.item.a[0];
+      $('pr-fact').textContent = q.item.f;
+      $('pr-pos').textContent = ordinal(rank);
+      $('pr-pts').textContent = me.pts || 0;
+    } else if(st === 'final'){
+      $('pf-score').textContent = me.pts || 0;
+      $('pf-pos').textContent = ordinal(rank); $('pf-total').textContent = list.length;
+      $('pf-ok').textContent = me.ok || 0; $('pf-q').textContent = m.total; $('pf-streak').textContent = me.mejor || 0;
+      $('pf-title').textContent = 'Resultado final · ' + me.n;
+      $('pf-board').innerHTML = boardHTML(list, UID, 8);
+      $('pf-rec').href = recUrl(me.n, me.pts || 0, m.nivel, m.creado || Date.now());
+    }
+  }
+
+  function playerTick(){
+    if(!G || !G.meta || G.meta.estado !== 'pregunta' || !G.meta.t0) return;
+    var left = Math.max(0, T - (srvNow() - G.meta.t0) / 1000);
+    $('pq-bar').style.transform = 'scaleX(' + (left / T) + ')';
+    $('pq-timer').classList.toggle('low', left <= 5);
+    if(left <= 0 && !G.answered){ G.answered = true; lockAnswers(-1); $('pq-wait').hidden = false; $('pq-wait').textContent = 'Se acabó el tiempo. Esperando el resultado…'; }
+  }
+
+  /* ---------------- botones ---------------- */
+  $('btn-crear').addEventListener('click', hostCreate);
+  $('btn-unirme').addEventListener('click', function(){ $('j-msg').hidden = true; show(sJoin); });
+  $('btn-join-back').addEventListener('click', toStart);
+  $('btn-join').addEventListener('click', joinSubmit);
+  $('j-name').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ joinSubmit(); } });
+  $('j-code').addEventListener('input', function(){ this.value = this.value.replace(/\D/g, '').slice(0, 4); });
+  Array.prototype.forEach.call(document.querySelectorAll('#h-levels .level'), function(b){
+    b.addEventListener('click', function(){ if(G && G.role === 'host' && G.meta && G.meta.estado === 'lobby'){ G.base.child('meta/nivel').set(+b.getAttribute('data-lv')); } });
+  });
+  $('h-start').addEventListener('click', hostStart);
+  $('h-next').addEventListener('click', hostNext);
+  $('h-cancel').addEventListener('click', function(){ if(G && confirm('¿Cancelar este juego?')){ var b = G.base; leaveGroup(); b.remove(); } });
+  $('h-new').addEventListener('click', leaveGroup);
+  $('p-leave1').addEventListener('click', function(){ if(G){ G.base.child('jug/' + UID).remove(); } leaveGroup(); });
+  $('p-leave2').addEventListener('click', leaveGroup);
+
+  function resumeGroup(){
+    var mp = null; try { mp = JSON.parse(sessionStorage.getItem(MPK)); } catch(e){}
+    var pc = new URLSearchParams(location.search).get('codigo');
+    if(mp && mp.code && fbInit()){
+      db.ref('juegos/' + mp.code + '/meta').once('value').then(function(s){
+        if(!s.exists()){ try { sessionStorage.removeItem(MPK); } catch(e){} return; }
+        if(mp.role === 'host') hostOpen(mp.code); else playerOpen(mp.code);
+      });
+      return;
+    }
+    if(pc){ $('j-code').value = pc.replace(/\D/g, '').slice(0, 4); show(sJoin); }
+  }
+
   lvButtons();
   toStart();
   if(/[?&]marcador/.test(location.search)){ renderRound(); show(sGuia); }
+  resumeGroup();
 })();
 </script>
 </body>
