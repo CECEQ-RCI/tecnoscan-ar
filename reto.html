@@ -161,6 +161,9 @@
   .hq-text{font-family:var(--font-display);font-weight:600;font-size:clamp(22px,4.2vw,36px);line-height:1.22;margin:0;text-wrap:balance;}
   .pos-big{font-family:var(--font-display);font-weight:700;font-size:clamp(40px,12vw,64px);color:var(--accent);line-height:1;}
   .board li.top1{border-color:var(--gold);}
+  .conn{align-self:flex-start;font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:7px 13px;color:var(--text-dim);}
+  .conn.warn{border-color:var(--gold);color:var(--gold);}
+  .conn.full{border-color:var(--bad);color:var(--bad);}
   .wait{color:var(--text-dim);font-size:15px;text-align:center;margin:8px 0;}
 </style>
 </head>
@@ -260,6 +263,7 @@
 
   <!-- ANFITRIÓN -->
   <section id="s-host" hidden style="display:flex;flex-direction:column;gap:18px;">
+    <div class="conn" id="h-conn" hidden></div>
     <div id="h-lobby" style="display:flex;flex-direction:column;gap:18px;">
       <div class="label">Juego en grupo · anfitrión</div>
       <div class="hgrid">
@@ -690,8 +694,23 @@
   }
   function leaveGroup(){
     gClear();
+    presenceOff();
     try { sessionStorage.removeItem(MPK); } catch(e){}
     toStart();
+  }
+  /* presencia: cuenta los dispositivos conectados a juegos (el plan gratuito permite ~100 a la vez) */
+  var MAXCONN = 100;
+  function presenceOn(){
+    var c = db.ref('.info/connected'), me = db.ref('juegos/_p/' + UID);
+    c.on('value', function(s){ if(s.val()){ me.onDisconnect().remove(); me.set(TS()); } });
+    G.refs.push(c);
+  }
+  function presenceOff(){ try { if(db){ db.ref('juegos/_p/' + UID).remove(); } } catch(e){} }
+  function renderConn(n){
+    var el = $('h-conn');
+    el.hidden = false;
+    el.className = 'conn' + (n >= MAXCONN ? ' full' : (n >= MAXCONN * 0.85 ? ' warn' : ''));
+    el.textContent = 'Conectados ahora: ' + n + ' de ' + MAXCONN + (n >= MAXCONN ? ' · límite alcanzado: algunos jugadores no podrán entrar' : (n >= MAXCONN * 0.85 ? ' · cerca del límite del plan gratuito' : ''));
   }
   function noConn(){ alert('No se pudo conectar con el servicio de juego. Revisa tu conexión a internet e inténtalo de nuevo.'); }
 
@@ -747,6 +766,8 @@
     listen(G.base.child('jug'), function(s){ G.jug = s.val() || {}; hostRender(); });
     listen(G.base.child('resp'), function(s){ G.resp = s.val() || {}; hostRender(); });
     listen(G.base.child('preg'), function(s){ G.preg = s.val() || null; hostRender(); });
+    presenceOn();
+    listen(db.ref('juegos/_p'), function(s){ renderConn(s.numChildren()); });
     G.tick = setInterval(hostTick, 250);
     show(sHost);
   }
@@ -881,6 +902,7 @@
     listen(G.base.child('meta'), function(s){ G.meta = s.val(); playerRender(); });
     listen(G.base.child('jug'), function(s){ G.jug = s.val() || {}; playerRender(); });
     listen(G.base.child('preg'), function(s){ G.preg = s.val() || null; playerRender(); });
+    presenceOn();
     G.tick = setInterval(playerTick, 150);
     show(sPlay);
   }
