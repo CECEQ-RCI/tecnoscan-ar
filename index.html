@@ -293,6 +293,8 @@
   }
   [hidden]{display:none !important;}
   body.single #btn-prev, body.single #btn-next, body.single #dots{display:none;}
+  .back-poster{pointer-events:auto;flex:none;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--text);background:rgba(17,24,32,.85);border:1px solid var(--border);border-radius:999px;padding:8px 13px;white-space:nowrap;backdrop-filter:blur(8px);}
+  .back-poster:hover{border-color:var(--accent);}
   .badge-nocam{
     position:fixed;
     top:max(60px, calc(env(safe-area-inset-top) + 44px));
@@ -346,6 +348,7 @@
       <div class="eyebrow">TecnoScan AR</div>
       <div class="name">Portal Tecnológico</div>
     </div>
+    <a class="back-poster" id="back-poster" href="poster.html" hidden>‹ Regresar al poster</a>
   </div>
 
   <div class="qr-status" id="qr-status" hidden>Buscando QR</div>
@@ -1454,7 +1457,7 @@
     boot.hidden = true;
     hud.hidden = false;
     veil.hidden = false;
-    if(!withCamera){ badgeNoCam.hidden = false; }
+    if(!withCamera){ badgeNoCam.hidden = false; document.getElementById('back-poster').hidden = false; }
     qrMode = !!withCamera && !!singleKey;
     if(qrMode){
       qrHolder = new THREE.Group();
