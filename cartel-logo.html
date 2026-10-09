@@ -25,6 +25,12 @@
   #start p{font-family:'IBM Plex Sans','Segoe UI',sans-serif;font-size:14.5px;line-height:1.6;color:var(--dim);max-width:380px;margin:0;}
   #start .e{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
   .btn{font-family:'IBM Plex Mono',Consolas,monospace;font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;border-radius:12px;padding:15px 26px;border:0;cursor:pointer;background:var(--accent);color:#062420;box-shadow:0 0 24px rgba(77,232,212,.35);}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none;}
+  #start .nota{font-size:12.5px;max-width:320px;}
+  body.nocam{background:radial-gradient(ellipse at 50% 40%,rgba(77,232,212,.2),transparent 62%),var(--bg);}
+  body.nocam video{display:none !important;}
+  .a-enter-vr{display:none !important;}
+  body.nocam .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:76px;margin:0;width:max-content;max-width:86%;}
   :focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 </style>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -35,8 +41,10 @@
 <div id="start">
   <div class="e">TecnoScan AR · Pabellón STEM</div>
   <h1>Apunta al logo y despierta a Nibble</h1>
-  <p>Nibble, el robot del CECEQ, saldrá del logo del Gómez Morin, te saludará y te contará un Tecnodato en voz alta. Necesita tu cámara y el sonido del celular.</p>
+  <p>Nibble, el robot del CECEQ, saldrá del logo del Gómez Morin, te saludará y te contará un Tecnodato en voz alta. Míralo sobre el cartel con la cámara, o directo en tu pantalla si prefieres no usarla. Activa el sonido del celular para escucharlo.</p>
   <button class="btn" id="btn-start" type="button">Activar cámara y sonido</button>
+  <button class="btn ghost" id="btn-nocam" type="button">Ver sin cámara</button>
+  <p class="nota">Sin cámara, Nibble aparece en tu pantalla y lo puedes girar con el dedo.</p>
 </div>
 
 <div class="hud">
@@ -45,10 +53,10 @@
   </div>
   <div class="status" id="status">Buscando cartel</div>
   <div class="hint" id="hint">Apunta la cámara al logo del cartel</div>
-  <div class="foot"><span>v1 · prueba</span><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
+  <div class="foot"><span>v1 · prueba</span><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
 </div>
 
-<a-scene mindar-image="imageTargetSrc: cartel-logo.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; missTolerance: 4; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
+<a-scene mindar-image="imageTargetSrc: cartel-logo.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; uiError: no; missTolerance: 4; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
          color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
          vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
   <a-light type="ambient" intensity="1.15"></a-light>
@@ -74,7 +82,7 @@
   ];
   var LOGO_X = 0, LOGO_Y = -0.033, ROBOT_X = 0, ROBOT_Y = -0.2, ROBOT_Z = 0.2, ROBOT_S = 0.4;
   var factIdx = -1, firstTime = true;
-  var muted = false, audioCtx = null;
+  var muted = false, audioCtx = null, noCam = false, dragged = false;
 
   /* ---------- sonido ---------- */
   function beep(freq, when, dur, vol){
@@ -153,7 +161,7 @@
       obj.addEventListener('targetFound', function(){ self.onFound(); });
       obj.addEventListener('targetLost', function(){ self.onLost(); });
       window.addEventListener('click', function(e){
-        if(self.active && !e.target.closest('.sound,#start')) self.nextFact(true);
+        if(self.active && !dragged && !e.target.closest('.sound,#start')) self.nextFact(true);
       });
     },
 
@@ -330,13 +338,81 @@
   });
 
   /* ---------- arranque ---------- */
-  document.getElementById('btn-start').addEventListener('click', function(){
+  var NOCAM = {dist: 1.4, cx: 0, cy: 0.22, logoPlane: false};
+  var rotX = 0, rotY = 0, pivot = null, drag = null;
+
+  function initAudio(){
     try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){}
     try { if('speechSynthesis' in window){ var u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); speechSynthesis.getVoices(); } } catch(e){}
+  }
+
+  /* el contenido queda fijo al centro de la pantalla y gira alrededor de su centro */
+  function applyPose(){
+    var obj = document.getElementById('objetivo');
+    var eu = new T.Euler(rotX, rotY, 0);
+    var c = new T.Vector3(NOCAM.cx, NOCAM.cy, 0.2).applyEuler(eu);
+    obj.object3D.position.set(-c.x, -c.y, -NOCAM.dist - c.z);
+    obj.object3D.rotation.copy(eu);
+  }
+
+  function startNoCam(failed){
+    if(noCam) return;
+    noCam = true;
+    if(!audioCtx) initAudio();
+    var sc = document.querySelector('a-scene');
+    try { sc.systems['mindar-image-system'].stop(); } catch(e){}
     document.getElementById('start').hidden = true;
-    var sys = document.querySelector('a-scene').systems['mindar-image-system'];
-    sys.start();
+    document.body.classList.add('nocam');
+    var cam = document.querySelector('a-camera');
+    cam.setAttribute('camera', 'fov', 60);
+    var obj = document.getElementById('objetivo');
+    obj.object3D.matrixAutoUpdate = true; obj.object3D.scale.set(1, 1, 1); obj.object3D.visible = true;
+    if(NOCAM.logoPlane){
+      var lt = new T.TextureLoader().load('logo-gm.jpg'); lt.colorSpace = T.SRGBColorSpace; lt.anisotropy = 8;
+      var lp = new T.Mesh(new T.PlaneGeometry(0.576, 0.496), new T.MeshBasicMaterial({map: lt}));
+      lp.position.set(LOGO_X, LOGO_Y, 0);
+      obj.object3D.add(lp);
+    }
+    rotY = 0; rotX = 0; applyPose();
+    var r = document.getElementById('robot').components['robot-cecq'];
+    r.onFound();
+    document.getElementById('status').textContent = 'Sin cámara';
+    document.getElementById('status').className = 'status ok';
+    var h = document.getElementById('hint');
+    h.textContent = failed ? 'No pude abrir la cámara, así que te muestro a Nibble aquí. Arrástralo para girarlo.' : 'Arrastra para girar a Nibble · toca para otro Tecnodato';
+    h.hidden = false;
+    document.getElementById('btn-cam').hidden = false;
+    setTimeout(function(){ if(noCam && !failed) h.hidden = true; }, 6000);
+  }
+
+  window.addEventListener('pointerdown', function(e){
+    if(!noCam || (e.target.closest && e.target.closest('.sound,#start'))) return;
+    drag = {x: e.clientX, y: e.clientY, ry: rotY, rx: rotX}; dragged = false;
   });
+  window.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if(Math.abs(dx) + Math.abs(dy) > 8) dragged = true;
+    if(!dragged) return;
+    rotY = Math.max(-0.95, Math.min(0.95, drag.ry + dx*0.008));
+    rotX = Math.max(-0.4, Math.min(0.4, drag.rx + dy*0.005));
+    applyPose();
+  });
+  window.addEventListener('pointerup', function(){ drag = null; setTimeout(function(){ dragged = false; }, 60); });
+  window.addEventListener('pointercancel', function(){ drag = null; dragged = false; });
+
+  document.getElementById('btn-start').addEventListener('click', function(){
+    initAudio();
+    document.getElementById('start').hidden = true;
+    var sc = document.querySelector('a-scene');
+    sc.addEventListener('arError', function(){ startNoCam(true); });
+    try {
+      var p = sc.systems['mindar-image-system'].start();
+      if(p && p.catch) p.catch(function(){ startNoCam(true); });
+    } catch(err){ startNoCam(true); }
+  });
+  document.getElementById('btn-nocam').addEventListener('click', function(){ startNoCam(false); });
+  document.getElementById('btn-cam').addEventListener('click', function(){ location.reload(); });
   document.getElementById('btn-sound').addEventListener('click', function(){
     muted = !muted;
     this.textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
