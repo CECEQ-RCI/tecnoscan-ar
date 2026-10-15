@@ -50,7 +50,7 @@ http.createServer((req, res) => {
     res.writeHead(206, { "Content-Type": tipo, "Content-Range": `bytes ${a}-${b}/${tam}`, "Accept-Ranges": "bytes", "Content-Length": b - a + 1 });
     fs.createReadStream(archivo, { start: a, end: b }).pipe(res);
   } else {
-    res.writeHead(200, { "Content-Type": tipo, "Content-Length": tam });
+    res.writeHead(200, { "Content-Type": tipo, "Content-Length": tam, "Cache-Control": "no-cache" });
     fs.createReadStream(archivo).pipe(res);
   }
 }).listen(PUERTO, () => console.log(`Abre http://localhost:${PUERTO}`));

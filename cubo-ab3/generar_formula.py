@@ -64,9 +64,9 @@ def cara(n):
     for (x0, y0, x1, y1), nA in regiones:
         base = COLORES[nA]
         tonos = [mezclar(base, (0, 0, 0), 0.45), mezclar(base, (255, 255, 255), 0.45), (255, 255, 255), (20, 20, 20)]
-        for _ in range(int(160 * (x1 - x0) * (y1 - y0) / TAM ** 2) + 25):
+        for _ in range(int(320 * (x1 - x0) * (y1 - y0) / TAM ** 2) + 40):
             c = rnd.choice(tonos)
-            x, y, s = rnd.randint(x0, x1), rnd.randint(y0, y1), rnd.randint(14, 55)
+            x, y, s = rnd.randint(x0, x1), rnd.randint(y0, y1), rnd.randint(18, 80)
             k = rnd.random()
             if k < 0.45:
                 d.polygon([(x + rnd.randint(-s, s), y + rnd.randint(-s, s)) for _ in range(3)], fill=c)
@@ -74,12 +74,13 @@ def cara(n):
                 d.ellipse([x, y, x + s, y + s], outline=c, width=rnd.randint(4, 9))
             else:
                 d.line([x, y, x + rnd.randint(-2 * s, 2 * s), y + rnd.randint(-2 * s, 2 * s)], fill=c, width=rnd.randint(4, 10))
-        # Bordes de las piezas
-        d.rectangle((x0, y0, x1, y1), outline=(17, 17, 17), width=10)
-    # Nombre de cada pieza
+    # Nombre de cada pieza, en un lugar distinto en cada cara para que no se parezcan entre sí.
+    # (Sin bordes negros ni marco: dan las mismas esquinas en todas las caras y MindAR las confunde.)
     for (x0, y0, x1, y1), nA in regiones:
-        tam = 150 if min(x1 - x0, y1 - y0) > 450 else 110
-        d.text(((x0 + x1) / 2, (y0 + y1) / 2), NOMBRES[nA], font=fuente(tam), anchor="mm",
+        tam = (150 if min(x1 - x0, y1 - y0) > 450 else 110) + rnd.randint(-15, 15)
+        cx = (x0 + x1) / 2 + rnd.uniform(-0.18, 0.18) * (x1 - x0)
+        cy = (y0 + y1) / 2 + rnd.uniform(-0.18, 0.18) * (y1 - y0)
+        d.text((cx, cy), NOMBRES[nA], font=fuente(tam), anchor="mm",
                fill="white", stroke_width=10, stroke_fill=(17, 17, 17))
     # Medidas a y b en el borde inferior y en el izquierdo
     f = fuente(64)
@@ -89,16 +90,20 @@ def cara(n):
     for t0, t1, l in tramos(v):
         d.text((70, (py(t0) + py(t1)) / 2), l, font=f, anchor="mm", fill="black",
                stroke_width=8, stroke_fill="white")
-    # Fórmula y número de cara
+    # Fórmula solo en la cara 1: si se repite en todas, MindAR confunde las caras entre sí
+    if n == 1:
+        formula(d)
+    d.text((TAM - 60, TAM - 60), str(n), font=fuente(48), anchor="mm", fill="black",
+           stroke_width=6, stroke_fill="white")
+    return img
+
+
+def formula(d):
     fb = fuente(54)
     caja = d.textbbox((TAM / 2, 80), FORMULA, font=fb, anchor="mm")
     d.rounded_rectangle((caja[0] - 24, caja[1] - 16, caja[2] + 24, caja[3] + 16), radius=20,
                         fill="white", outline="black", width=6)
     d.text((TAM / 2, 80), FORMULA, font=fb, anchor="mm", fill="black")
-    d.text((TAM - 60, TAM - 60), str(n), font=fuente(48), anchor="mm", fill="black",
-           stroke_width=6, stroke_fill="white")
-    d.rectangle([0, 0, TAM - 1, TAM - 1], outline="black", width=24)
-    return img
 
 
 if __name__ == "__main__":
@@ -109,6 +114,6 @@ if __name__ == "__main__":
         img.save(CARAS / f"cara{n}.png")
         caras.append(img)
     hoja = plantilla(caras, f"{FORMULA}   ·   Imprimir al 100% (sin ajustar). Gris = pestañas.")
-    hoja.save(BASE / "plantilla_formula.png", dpi=(300, 300))
-    hoja.save(BASE / "plantilla_formula.pdf", resolution=300)
-    print("Listo: caras/cara1..6.png, plantilla_formula.png y .pdf  ->  vuelve a compilar targets.mind")
+    hoja.save(BASE / "plantilla_formula_v2.png", dpi=(300, 300))
+    hoja.save(BASE / "plantilla_formula_v2.pdf", resolution=300)
+    print("Listo: caras/cara1..6.png, plantilla_formula_v2.png y .pdf  ->  vuelve a compilar targets.mind")

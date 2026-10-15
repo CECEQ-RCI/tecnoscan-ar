@@ -95,6 +95,10 @@ def plantilla(caras, texto=None):
                 d.polygon(poly, fill=gris, outline="black")
     for img, (c, r) in zip(caras, pos):
         hoja.paste(img.resize((lado, lado), Image.LANCZOS), (ox + c * lado, oy + r * lado))
+    # Líneas finas de corte/doblez en el borde de cada cara (no forman parte de lo que se detecta)
+    for (c, r) in pos:
+        x, y = ox + c * lado, oy + r * lado
+        d.rectangle([x, y, x + lado, y + lado], outline=(60, 60, 60), width=3)
     f = fuente(40)
     texto = texto or f"Cubo AR - imprimir al 100% (sin ajustar). Cara = {LADO_CM:g} cm. Gris = pestañas para pegar."
     d.text((60, H - 110), texto,
