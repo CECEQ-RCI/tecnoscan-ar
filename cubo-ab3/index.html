@@ -14,6 +14,10 @@
                    background: #e63946; color: #fff; }
   #sonido { position: absolute; right: 16px; bottom: 16px; z-index: 5; font-size: 1.1rem; padding: 10px 16px;
             border: 0; border-radius: 10px; background: rgba(255,255,255,.85); display: none; }
+  #titulo { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 5; max-width: calc(100% - 32px);
+            padding: 10px 18px; border-radius: 12px; background: rgba(0,0,0,.7); color: #fff; font-size: clamp(1rem, 4.5vw, 1.6rem);
+            font-weight: bold; text-align: center; white-space: nowrap; }
+  #titulo[hidden] { display: none; }
 </style>
 <script type="importmap">
 {
@@ -35,6 +39,7 @@
   <button data-modo="dinosaurio">🦖 Dinosaurio</button>
 </div>
 <button id="sonido">🔇 Activar sonido</button>
+<div id="titulo" hidden></div>
 <div id="container"></div>
 
 <video id="video" src="video.mp4" loop muted playsinline crossorigin="anonymous" preload="auto" style="display:none"></video>
@@ -55,7 +60,7 @@ async function iniciar(modo) {
   const mindar = new MindARThree({
     container: document.getElementById("container"),
     imageTargetSrc: "targets.mind",
-    maxTrack: 1,
+    maxTrack: 2,                              // hasta 2 caras a la vez (se combinan)
     filterMinCF: 0.0001, filterBeta: 0.001,   // menos temblor
   });
   const { renderer, scene, camera } = mindar;
@@ -64,19 +69,58 @@ async function iniciar(modo) {
   sol.position.set(1, 2, 3);
   scene.add(sol);
 
-  // Medida 1 = ancho de la cara impresa. Cada objeto se coloca en el centro del cubo de papel
-  // y girado según la cara que ve la cámara, así el cubo virtual coincide con el impreso.
+  // UN SOLO cubo virtual para todo el cubo de papel. Las 6 caras son puntos de detección:
+  // cada cara visible "dice" dónde está el cubo completo (su ancla × la orientación de esa cara)
+  // y, si se ven varias, se promedian. Medida 1 = ancho de la cara impresa.
+  const cubo = contenido.crear();
+  cubo.matrixAutoUpdate = false;
+  cubo.visible = false;
+  scene.add(cubo);
+
+  const anclas = [], ajustes = [];
   for (let i = 0; i < NUM_CARAS; i++) {
-    const ancla = mindar.addAnchor(i);
-    ancla.group.add(orientarEnCara(contenido.crear(), i));
-    if (contenido.crearTitulo) ancla.group.add(contenido.crearTitulo());
-    if (contenido.alEncontrar) ancla.onTargetFound = contenido.alEncontrar;
-    if (contenido.alPerder) ancla.onTargetLost = contenido.alPerder;
+    anclas.push(mindar.addAnchor(i));
+    const o = orientarEnCara(new THREE.Object3D(), i);
+    o.updateMatrix();
+    ajustes.push(o.matrix.clone());          // de "cara i" a "centro del cubo"
   }
+
+  const GRACIA_MS = 700;                      // al girar entre caras, el cubo no desaparece
+  const SUAVIZADO = 0.5;                      // 0 = sin cambio, 1 = salta directo a la nueva posición
+  const pos = new THREE.Vector3(), rot = new THREE.Quaternion(), esc = new THREE.Vector3();
+  const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3(), m = new THREE.Matrix4();
+  let ultimaDeteccion = -Infinity;
+
+  function ubicarCubo(ahora) {
+    let n = 0;
+    const sumaP = new THREE.Vector3(), sumaS = new THREE.Vector3(), promQ = new THREE.Quaternion();
+    anclas.forEach((ancla, i) => {
+      if (!ancla.visible) return;
+      m.copy(ancla.group.matrix).multiply(ajustes[i]).decompose(p, q, s);
+      sumaP.add(p); sumaS.add(s);
+      if (n === 0) promQ.copy(q);
+      else { if (promQ.dot(q) < 0) q.set(-q.x, -q.y, -q.z, -q.w); promQ.slerp(q, 1 / (n + 1)); }
+      n++;
+    });
+    if (n > 0) {
+      sumaP.divideScalar(n); sumaS.divideScalar(n);
+      if (!cubo.visible) { pos.copy(sumaP); rot.copy(promQ); esc.copy(sumaS); }
+      else { pos.lerp(sumaP, SUAVIZADO); rot.slerp(promQ, SUAVIZADO); esc.lerp(sumaS, SUAVIZADO); }
+      cubo.matrix.compose(pos, rot, esc);
+      ultimaDeteccion = ahora;
+      if (!cubo.visible) { cubo.visible = true; contenido.alEncontrar?.(); titulo.hidden = !contenido.titulo; }
+    } else if (cubo.visible && ahora - ultimaDeteccion > GRACIA_MS) {
+      cubo.visible = false; contenido.alPerder?.(); titulo.hidden = true;
+    }
+  }
+
+  const titulo = document.getElementById("titulo");
+  titulo.textContent = contenido.titulo || "";
 
   await mindar.start();
   renderer.setAnimationLoop(() => {
     const dt = reloj.getDelta();
+    ubicarCubo(performance.now());
     actualizaciones.forEach((f) => f(dt));
     renderer.render(scene, camera);
   });

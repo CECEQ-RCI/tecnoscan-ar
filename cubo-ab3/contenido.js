@@ -141,7 +141,9 @@ export function prepararFormula() {
       });
       return g;
     },
-    // El título va fijo arriba de la cara que ve la cámara (en coordenadas de la cara)
+    // En la cámara el título es un letrero fijo arriba de la pantalla (index.html)
+    titulo: "(a+b)³ = a³ + 3a²b + 3ab² + b³",
+    // En la vista previa va flotando arriba del cubo (en coordenadas de la cara)
     crearTitulo: () => {
       const titulo = etiqueta("(a+b)³ = a³ + 3a²b + 3ab² + b³", { alto: 0.16 });
       titulo.position.set(0, 1.25, 0);
