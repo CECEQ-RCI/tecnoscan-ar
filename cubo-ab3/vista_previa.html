@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vista previa del cubo</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #f1f4f8; font-family: sans-serif; }
+  #barra { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; gap: 8px; flex-wrap: wrap; }
+  #barra button { font-size: 1rem; padding: 8px 14px; border: 0; border-radius: 8px; background: #1d3557; color: #fff; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<!-- Vista sin cámara para probar el contenido o proyectarlo en clase. Arrastra para girar.
+     ?modo=formula|pintura|dinosaurio|video   ·   ?t=4 congela la animación en ese segundo -->
+<div id="barra">
+  <button data-modo="formula">🧮 Fórmula</button>
+  <button data-modo="video">🎬 Video</button>
+  <button data-modo="pintura">🖼️ Pintura</button>
+  <button data-modo="dinosaurio">🦖 Dinosaurio</button>
+</div>
+<video id="video" src="video.mp4" loop muted playsinline preload="auto" style="display:none"></video>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { reloj, actualizaciones, prepararVideo, prepararPintura, prepararDino, prepararFormula, orientarEnCara } from "./contenido.js";
+
+const params = new URLSearchParams(location.search);
+const modo = params.get("modo") || "formula";
+const tFijo = params.has("t") ? parseFloat(params.get("t")) : null;
+const video = document.getElementById("video");
+
+for (const b of document.querySelectorAll("#barra button"))
+  b.onclick = () => { location.search = "?modo=" + b.dataset.modo; };
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf1f4f8);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
+const sol = new THREE.DirectionalLight(0xffffff, 1.5);
+sol.position.set(1, 2, 3);
+scene.add(sol);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 100);
+camera.position.set(1.8, 1.4, 2.6);
+const controles = new OrbitControls(camera, renderer.domElement);
+controles.target.set(0, 0.2, 0);
+controles.update();
+
+// La "cara rastreada" es el plano z = 0.5 (frente del cubo), igual que en index.html
+const ancla = new THREE.Group();
+ancla.position.z = 0.5;
+scene.add(ancla);
+// Cubo de papel de referencia (gris claro, solo bordes)
+scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),
+  new THREE.LineBasicMaterial({ color: 0x999999 })));
+
+const preparar = { video: () => prepararVideo(video), pintura: prepararPintura, dinosaurio: prepararDino, formula: prepararFormula }[modo];
+try {
+  const contenido = await preparar();
+  ancla.add(orientarEnCara(contenido.crear(), 2));   // como si la cámara viera la cara 3 (frente)
+  if (contenido.crearTitulo) ancla.add(contenido.crearTitulo());
+  if (modo === "video") video.play().catch(() => {});
+} catch (e) { alert(e.message || e); }
+
+function cuadro() {
+  if (tFijo !== null) reloj.elapsedTime = tFijo;
+  const dt = tFijo !== null ? 0 : reloj.getDelta();
+  actualizaciones.forEach((f) => f(dt));
+  renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(cuadro);
+window.dibujar = cuadro;   // para pruebas y para grabar el GIF
+window.vista = { camera, controles, reloj, renderer };
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

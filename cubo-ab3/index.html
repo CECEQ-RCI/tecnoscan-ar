@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cubo AR STEM</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+  #container { position: absolute; inset: 0; }
+  #inicio { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 14px; background: #1d3557; color: #fff; text-align: center; padding: 24px; }
+  #inicio h1 { margin: 0 0 8px; }
+  #inicio button { font-size: 1.25rem; width: min(320px, 100%); padding: 14px; border: 0; border-radius: 12px;
+                   background: #e63946; color: #fff; }
+  #sonido { position: absolute; right: 16px; bottom: 16px; z-index: 5; font-size: 1.1rem; padding: 10px 16px;
+            border: 0; border-radius: 10px; background: rgba(255,255,255,.85); display: none; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+  }
+}
+</script>
+</head>
+<body>
+<div id="inicio">
+  <h1>Cubo AR STEM</h1>
+  <p>Elige qué mostrar y apunta la cámara a cualquier cara del cubo.</p>
+  <button data-modo="formula">🧮 Fórmula (a+b)³</button>
+  <button data-modo="video">🎬 Video</button>
+  <button data-modo="pintura">🖼️ Pintura</button>
+  <button data-modo="dinosaurio">🦖 Dinosaurio</button>
+</div>
+<button id="sonido">🔇 Activar sonido</button>
+<div id="container"></div>
+
+<video id="video" src="video.mp4" loop muted playsinline crossorigin="anonymous" preload="auto" style="display:none"></video>
+
+<script type="module">
+import * as THREE from "three";
+import { MindARThree } from "mindar-image-three";
+import { reloj, actualizaciones, prepararVideo, prepararPintura, prepararDino, prepararFormula, orientarEnCara } from "./contenido.js";
+
+const NUM_CARAS = 6;
+const video = document.getElementById("video");
+
+// ---------------- Arranque ----------------
+async function iniciar(modo) {
+  const preparar = { video: () => prepararVideo(video), pintura: prepararPintura, dinosaurio: prepararDino, formula: prepararFormula }[modo];
+  const contenido = await preparar();
+
+  const mindar = new MindARThree({
+    container: document.getElementById("container"),
+    imageTargetSrc: "targets.mind",
+    maxTrack: 1,
+    filterMinCF: 0.0001, filterBeta: 0.001,   // menos temblor
+  });
+  const { renderer, scene, camera } = mindar;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
+  const sol = new THREE.DirectionalLight(0xffffff, 1.5);
+  sol.position.set(1, 2, 3);
+  scene.add(sol);
+
+  // Medida 1 = ancho de la cara impresa. Cada objeto se coloca en el centro del cubo de papel
+  // y girado según la cara que ve la cámara, así el cubo virtual coincide con el impreso.
+  for (let i = 0; i < NUM_CARAS; i++) {
+    const ancla = mindar.addAnchor(i);
+    ancla.group.add(orientarEnCara(contenido.crear(), i));
+    if (contenido.crearTitulo) ancla.group.add(contenido.crearTitulo());
+    if (contenido.alEncontrar) ancla.onTargetFound = contenido.alEncontrar;
+    if (contenido.alPerder) ancla.onTargetLost = contenido.alPerder;
+  }
+
+  await mindar.start();
+  renderer.setAnimationLoop(() => {
+    const dt = reloj.getDelta();
+    actualizaciones.forEach((f) => f(dt));
+    renderer.render(scene, camera);
+  });
+}
+
+for (const btn of document.querySelectorAll("#inicio button")) {
+  btn.onclick = async () => {
+    const modo = btn.dataset.modo;
+    document.getElementById("inicio").style.display = "none";
+    if (modo === "video") {
+      document.getElementById("sonido").style.display = "block";
+      // Desbloquea el video con el clic (requisito de los navegadores móviles)
+      try { await video.play(); video.pause(); } catch (e) { console.warn(e); }
+    }
+    iniciar(modo).catch((e) => { alert(e.message || e); location.reload(); });
+  };
+}
+
+// También se puede abrir directo con ?modo=formula, ?modo=video, etc.
+const modoURL = new URLSearchParams(location.search).get("modo");
+if (modoURL) document.querySelector(`#inicio button[data-modo="${modoURL}"]`)?.click();
+
+document.getElementById("sonido").onclick = (ev) => {
+  video.muted = !video.muted;
+  ev.target.textContent = video.muted ? "🔇 Activar sonido" : "🔊 Silenciar";
+};
+</script>
+</body>
+</html>

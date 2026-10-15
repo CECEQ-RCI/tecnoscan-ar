@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Compilar caras del cubo</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
+<style>body{font-family:sans-serif;padding:24px}</style>
+</head>
+<body>
+<h1>Compilar las 6 caras</h1>
+<p>Usa caras/cara1.png … cara6.png (en ese orden) y guarda <b>targets.mind</b> en la carpeta.</p>
+<button id="btn">Compilar</button>
+<p id="estado">Listo para compilar.</p>
+<script>
+const estado = document.getElementById("estado");
+const cargar = (src) => new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = src; });
+
+async function compilar() {
+  estado.textContent = "Cargando imágenes…";
+  const imgs = await Promise.all([1, 2, 3, 4, 5, 6].map((n) => cargar(`caras/cara${n}.png`)));
+  const compiler = new window.MINDAR.IMAGE.Compiler();
+  await compiler.compileImageTargets(imgs, (p) => { estado.textContent = `Compilando… ${p.toFixed(0)}%`; });
+  const datos = await compiler.exportData();
+  await fetch("/guardar-targets", { method: "POST", body: datos });
+  estado.textContent = `¡Listo! targets.mind guardado (${datos.byteLength} bytes).`;
+  window.compilado = true;
+}
+document.getElementById("btn").onclick = () => compilar().catch((e) => { estado.textContent = "Error: " + e; console.error(e); });
+</script>
+</body>
+</html>
