@@ -20,6 +20,12 @@
             padding: 10px 18px; border-radius: 12px; background: rgba(0,0,0,.7); color: #fff; font-size: clamp(1rem, 4.5vw, 1.6rem);
             font-weight: bold; text-align: center; white-space: nowrap; }
   #titulo[hidden] { display: none; }
+  #estado { position: absolute; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 5;
+            max-width: calc(100% - 32px); padding: 8px 16px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff;
+            font-size: .95rem; text-align: center; pointer-events: none; }
+  #estado[hidden], #tocar[hidden] { display: none; }
+  #tocar { position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center;
+           background: rgba(0,0,0,.55); border: 0; color: #fff; font-size: 1.3rem; font-weight: bold; padding: 24px; }
 </style>
 <script type="importmap">
 {
@@ -42,6 +48,8 @@
 </div>
 <button id="sonido">🔇 Activar sonido</button>
 <div id="titulo" hidden></div>
+<div id="estado" hidden></div>
+<button id="tocar" hidden>📷 Toca para activar la cámara</button>
 <div id="container"></div>
 
 <video id="video" src="video.mp4" loop muted playsinline crossorigin="anonymous" preload="auto" style="display:none"></video>
@@ -53,6 +61,24 @@ import { reloj, actualizaciones, prepararVideo, prepararPintura, prepararDino, p
 
 const NUM_CARAS = 6;
 const video = document.getElementById("video");
+
+const estado = document.getElementById("estado");
+const tocar = document.getElementById("tocar");
+
+// MindAR crea el <video> de la cámara pero nunca llama a play(): confía en el autoplay.
+// Algunos navegadores (p. ej. Brave en iPhone) lo bloquean y la cámara queda en negro.
+// Aquí se fuerza la reproducción y, si aun así queda pausado, se pide un toque.
+function activarCamara(v) {
+  v.muted = true;
+  v.playsInline = true;
+  const intentar = () => v.play().then(() => { tocar.hidden = true; }).catch(() => {});
+  intentar();
+  estado.textContent = "Apunta la cámara a una cara del cubo";
+  estado.hidden = false;
+  setTimeout(() => { if (v.paused || v.readyState < 2) tocar.hidden = false; }, 1500);
+  tocar.onclick = intentar;
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) intentar(); });
+}
 
 // ---------------- Arranque ----------------
 async function iniciar(modo) {
@@ -110,9 +136,9 @@ async function iniciar(modo) {
       else { pos.lerp(sumaP, SUAVIZADO); rot.slerp(promQ, SUAVIZADO); esc.lerp(sumaS, SUAVIZADO); }
       cubo.matrix.compose(pos, rot, esc);
       ultimaDeteccion = ahora;
-      if (!cubo.visible) { cubo.visible = true; contenido.alEncontrar?.(); titulo.hidden = !contenido.titulo; }
+      if (!cubo.visible) { cubo.visible = true; contenido.alEncontrar?.(); titulo.hidden = !contenido.titulo; estado.hidden = true; }
     } else if (cubo.visible && ahora - ultimaDeteccion > GRACIA_MS) {
-      cubo.visible = false; contenido.alPerder?.(); titulo.hidden = true;
+      cubo.visible = false; contenido.alPerder?.(); titulo.hidden = true; estado.hidden = false;
     }
   }
 
@@ -120,6 +146,7 @@ async function iniciar(modo) {
   titulo.textContent = contenido.titulo || "";
 
   await mindar.start();
+  activarCamara(mindar.video);
   renderer.setAnimationLoop(() => {
     const dt = reloj.getDelta();
     ubicarCubo(performance.now());
@@ -141,9 +168,15 @@ for (const btn of document.querySelectorAll("#inicio button")) {
   };
 }
 
-// También se puede abrir directo con ?modo=formula, ?modo=video, etc.
+// Desde el QR (?modo=formula): solo se muestra ese modo, con un botón "Abrir cámara".
+// La cámara arranca con el toque de la persona (iOS es más estricto si arranca sola).
 const modoURL = new URLSearchParams(location.search).get("modo");
-if (modoURL) document.querySelector(`#inicio button[data-modo="${modoURL}"]`)?.click();
+const elegido = modoURL && document.querySelector(`#inicio button[data-modo="${modoURL}"]`);
+if (elegido) {
+  for (const b of document.querySelectorAll("#inicio button")) b.hidden = b !== elegido;
+  document.querySelector("#inicio p").textContent = "Arma el cubo, toca el botón y apunta la cámara a cualquier cara.";
+  elegido.textContent = "📷 Abrir cámara";
+}
 
 document.getElementById("sonido").onclick = (ev) => {
   video.muted = !video.muted;
