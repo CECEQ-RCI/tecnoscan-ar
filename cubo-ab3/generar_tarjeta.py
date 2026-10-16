@@ -148,7 +148,13 @@ def reverso():
         d.text((x + r, y + r), str(i + 1), font=f(25, "b"), fill="white", anchor="mm")
         d.text((x + 2 * r + 16, y + r), p, font=f(27, "r"), fill=(40, 48, 66), anchor="lm")
         y += 2 * r + 16
-    d.text((TW - m, TH - cm(0.12) - cm(0.3)), "Proyecto STEAM · CECEQ", font=f(22, "r"), fill=(130, 140, 160), anchor="rb")
+    # Logo del Centro Educativo y Cultural Gómez Morín (PNG con fondo transparente), abajo a la derecha
+    logo = Image.open(BASE / "logo-gomez-morin.png").convert("RGBA")
+    alto = cm(1.45)
+    logo = logo.resize((round(logo.size[0] * alto / logo.size[1]), alto), Image.LANCZOS)
+    base_y = TH - cm(0.12) - cm(0.3)
+    img.paste(logo, (TW - m - logo.size[0], base_y - alto), logo)
+    d.text((x, base_y), "Proyecto STEAM · CECEQ", font=f(22, "r"), fill=(130, 140, 160), anchor="lb")
     franja_colores(d, TH - cm(0.12), cm(0.12))
     return img
 
