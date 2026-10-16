@@ -6,8 +6,6 @@
 <title>Vista previa del cubo</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #f1f4f8; font-family: sans-serif; }
-  #barra { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; gap: 8px; flex-wrap: wrap; }
-  #barra button { font-size: 1rem; padding: 8px 14px; border: 0; border-radius: 8px; background: #1d3557; color: #fff; }
 </style>
 <script type="importmap">
 {
@@ -21,12 +19,6 @@
 <body>
 <!-- Vista sin cámara para probar el contenido o proyectarlo en clase. Arrastra para girar.
      ?modo=formula|pintura|dinosaurio|video   ·   ?t=4 congela la animación en ese segundo -->
-<div id="barra">
-  <button data-modo="formula">🧮 Fórmula</button>
-  <button data-modo="video">🎬 Video</button>
-  <button data-modo="pintura">🖼️ Pintura</button>
-  <button data-modo="dinosaurio">🦖 Dinosaurio</button>
-</div>
 <video id="video" src="video.mp4" loop muted playsinline preload="auto" style="display:none"></video>
 <script type="module">
 import * as THREE from "three";
@@ -38,8 +30,6 @@ const modo = params.get("modo") || "formula";
 const tFijo = params.has("t") ? parseFloat(params.get("t")) : null;
 const video = document.getElementById("video");
 
-for (const b of document.querySelectorAll("#barra button"))
-  b.onclick = () => { location.search = "?modo=" + b.dataset.modo; };
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(devicePixelRatio);
@@ -54,7 +44,9 @@ sol.position.set(1, 2, 3);
 scene.add(sol);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 100);
-camera.position.set(1.8, 1.4, 2.6);
+// En pantallas angostas (celular vertical) la cámara se aleja para que quepan el cubo y el título
+const alejar = () => Math.max(1, 1.25 / camera.aspect);
+camera.position.set(1.8, 1.4, 2.6).multiplyScalar(alejar());
 const controles = new OrbitControls(camera, renderer.domElement);
 controles.target.set(0, 0.2, 0);
 controles.update();
@@ -85,7 +77,10 @@ renderer.setAnimationLoop(cuadro);
 window.dibujar = cuadro;   // para pruebas y para grabar el GIF
 window.vista = { camera, controles, reloj, renderer };
 addEventListener("resize", () => {
+  const antes = alejar();
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  camera.position.sub(controles.target).multiplyScalar(alejar() / antes).add(controles.target);
+  controles.update();
   renderer.setSize(innerWidth, innerHeight);
 });
 </script>
