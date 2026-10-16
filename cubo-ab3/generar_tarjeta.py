@@ -154,7 +154,7 @@ def reverso():
     logo = logo.resize((round(logo.size[0] * alto / logo.size[1]), alto), Image.LANCZOS)
     base_y = TH - cm(0.12) - cm(0.3)
     img.paste(logo, (TW - m - logo.size[0], base_y - alto), logo)
-    d.text((x, base_y), "Proyecto STEAM · CECEQ", font=f(22, "r"), fill=(130, 140, 160), anchor="lb")
+    d.text((x, base_y), "Proyecto STEM · CECEQ", font=f(22, "r"), fill=(130, 140, 160), anchor="lb")
     franja_colores(d, TH - cm(0.12), cm(0.12))
     return img
 
