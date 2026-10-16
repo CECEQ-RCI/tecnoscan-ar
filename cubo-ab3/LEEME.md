@@ -12,6 +12,9 @@
 | `compilar.html` | Convierte las 6 caras en `targets.mind` (lo que la cámara reconoce) |
 | `index.html` | La experiencia AR. Modos: **Fórmula (a+b)³**, Video, Pintura, Dinosaurio (también `?modo=formula`) |
 | `contenido.js` | El contenido de cada modo (tamaños de a y b, altura del dinosaurio, nombres de archivos) |
+| `tarjetas_imprimir.pdf` | **Tarjetas con QR** (10 por hoja, frente y reverso, imprimir a doble cara por el borde largo) |
+| `hoja_qr_docentes.pdf` | Guía para el docente con QR grande, pasos y actividad + 6 tarjetas sencillas |
+| `generar_tarjeta.py` / `generar_qr.py` | Regeneran tarjetas y guía (el QR apunta a ceceq-rci.github.io/.../cubo-ab3/?modo=formula) |
 | `vista_previa.html` | Ver cualquier modo **sin cámara** y girarlo con el mouse (útil para proyectar en clase) |
 
 > ⚠️ `targets.mind` tiene que corresponder al cubo impreso. Si usas `plantilla_formula_v2.pdf`, compila
