@@ -85,7 +85,13 @@ def hoja_docente(qr_img, vista):
     d.rectangle((0, 0, W, cm(3.4)), fill=SUAVE)
     cubitos(d, m, cm(0.9), cm(0.55))
     d.text((m, cm(1.7)), "Cubo de realidad aumentada  (a+b)³", font=fuente(92), fill=AZUL)
-    d.text((W - m, cm(1.0)), "Guía para el docente", font=fuente(44), fill=GRIS, anchor="ra")
+    d.text((m + 4 * cm(0.55) + 3 * cm(0.55) // 3 + cm(0.45), cm(0.9) + cm(0.55) // 2), "GUÍA PARA EL DOCENTE",
+           font=fuente(40), fill=GRIS, anchor="lm")
+    # Logo del Centro Educativo y Cultural Gómez Morín (PNG transparente), arriba a la derecha
+    logo = Image.open(BASE / "logo-gomez-morin.png").convert("RGBA")
+    alto = cm(2.5)
+    logo = logo.resize((round(logo.size[0] * alto / logo.size[1]), alto), Image.LANCZOS)
+    hoja.paste(logo, (W - m - logo.size[0], (cm(3.4) - alto) // 2), logo)
     # QR + vista previa
     y = cm(4.3)
     lado_qr = cm(8.5)
