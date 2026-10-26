@@ -37,6 +37,36 @@
   body.nocam .hint{position:absolute;left:50%;transform:translateX(-50%);bottom:76px;margin:0;width:max-content;max-width:86%;}
   :focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
 </style>
+
+<script>
+/* diagnóstico: abre esta página con ?diag=1 para ver el estado en pantalla */
+(function(){
+  if(!/[?&]diag/.test(location.search)) return;
+  var errs = [];
+  window.addEventListener('error', function(e){ errs.push((e.message || 'error') + ' @' + (e.lineno || '?')); });
+  window.addEventListener('unhandledrejection', function(e){ errs.push('promesa: ' + ((e.reason && e.reason.message) || e.reason)); });
+  var box = document.createElement('pre');
+  box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;margin:0;padding:8px 10px;max-height:46vh;overflow:auto;background:rgba(0,0,0,.82);color:#7dffb2;font:11px/1.35 monospace;white-space:pre-wrap;border:1px solid #2a6;border-radius:8px;pointer-events:none;';
+  document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(box); });
+  setInterval(function(){
+    var L = [];
+    try {
+      var v = document.querySelector('video'), sc = document.querySelector('a-scene'), ob = document.getElementById('objetivo'), rb = document.getElementById('robot');
+      var cam = sc && sc.querySelector('a-camera') && sc.querySelector('a-camera').getObject3D('camera');
+      var comp = rb && rb.components && rb.components['robot-cecq'];
+      L.push('pagina: ' + (document.querySelector('.foot span') || {}).textContent + ' | ' + innerWidth + 'x' + innerHeight);
+      L.push('AFRAME: ' + (window.AFRAME ? AFRAME.version : 'NO') + ' | MindAR sys: ' + !!(sc && sc.systems && sc.systems['mindar-image-system']));
+      L.push('video: ' + (v ? ('listo=' + v.readyState + ' ' + v.videoWidth + 'x' + v.videoHeight + ' pausa=' + v.paused + ' z=' + v.style.zIndex) : 'no existe'));
+      L.push('camara 3D: ' + (cam ? ('fov=' + cam.fov.toFixed(1) + ' asp=' + (cam.aspect || 0).toFixed(2) + ' near=' + cam.near.toFixed(1) + ' far=' + Math.round(cam.far)) : 'sin camara'));
+      L.push('cartel visible=' + (ob && ob.object3D.visible) + ' | robot activo=' + (comp && comp.active) + ' escala=' + (comp && comp.root.scale.x.toFixed(2)));
+      if(ob){ var p = ob.object3D.position, s = ob.object3D.scale; L.push('objetivo pos=' + [p.x, p.y, p.z].map(function(n){ return Math.round(n); }) + ' escala=' + Math.round(s.x) + ' autoMatriz=' + ob.object3D.matrixAutoUpdate); }
+      L.push('estado: ' + (document.getElementById('status') || {}).textContent);
+    } catch(e){ L.push('diag error: ' + e.message); }
+    L.push(errs.length ? ('ERRORES:\n' + errs.slice(-5).join('\n')) : 'sin errores de script');
+    box.textContent = L.join('\n');
+  }, 700);
+})();
+</script>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 </head>
