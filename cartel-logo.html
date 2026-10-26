@@ -53,7 +53,7 @@
   </div>
   <div class="status" id="status">Buscando cartel</div>
   <div class="hint" id="hint">Apunta la cámara al logo del cartel</div>
-  <div class="foot"><span>v2 · sin cámara</span><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
+  <div class="foot"><span>v3 · sin cámara</span><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
 </div>
 
 <a-scene mindar-image="imageTargetSrc: cartel-logo.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; uiError: no; missTolerance: 4; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
@@ -74,11 +74,15 @@
 
   var FACTS = [
     "Un nibble son 4 bits, la mitad de un byte. ¡Por eso me llamo así!",
-    "Un byte son 8 bits: con ellos tu celular guarda una sola letra.",
-    "Un chip moderno guarda miles de millones de transistores en unos pocos milímetros.",
-    "Un código QR sigue funcionando aunque esté un poco dañado.",
-    "La realidad aumentada pone objetos digitales sobre el mundo real, como yo ahora.",
-    "Las redes neuronales aprenden ajustando sus conexiones con muchos ejemplos."
+    "Un bit es la unidad más pequeña: solo vale 0 o 1, como un interruptor apagado o encendido.",
+    "Un byte equivale a 8 bits. Con un byte se guarda una letra o un número.",
+    "Un kilobyte son 1024 bytes. Alcanza para un documento de texto pequeño.",
+    "Un megabyte son 1024 kilobytes. Ahí caben canciones, fotos y archivos medianos.",
+    "Un gigabyte son 1024 megabytes. Es lo que miden tu memoria USB, tu celular y tu plan de datos.",
+    "Un terabyte son 1024 gigabytes. Lo usan los discos duros, las consolas y las computadoras.",
+    "Un petabyte son 1024 terabytes. Se usa en grandes centros de datos y nubes enormes.",
+    "Algunos fabricantes cuentan 1000 en vez de 1024. Por eso tu memoria USB parece tener un poco menos.",
+    "De menor a mayor: bit, byte, kilobyte, megabyte, gigabyte, terabyte y petabyte."
   ];
   var LOGO_X = 0, LOGO_Y = -0.033, ROBOT_X = 0, ROBOT_Y = -0.2, ROBOT_Z = 0.2, ROBOT_S = 0.4;
   var factIdx = -1, firstTime = true;
@@ -105,6 +109,11 @@
     o.frequency.setValueAtTime(180, t0); o.frequency.exponentialRampToValueAtTime(900, t0 + 0.45);
     g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.16, t0 + 0.08); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
     o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + 0.55);
+  }
+
+  /* pronunciación para la voz del celular */
+  function pron(t){
+    return t.replace(/nibble/gi, 'níbol').replace(/(\w*)byte(s?)/gi, function(m, pre, pl){ return pre + 'báit' + pl; });
   }
 
   function pickVoice(){
@@ -277,7 +286,7 @@
       if(muted || !('speechSynthesis' in window)) return;
       try {
         speechSynthesis.cancel();
-        var u = new SpeechSynthesisUtterance(text.replace(/nibble/gi, 'níbol'));
+        var u = new SpeechSynthesisUtterance(pron(text));
         u.lang = 'es-MX'; u.pitch = 1.4; u.rate = 1.0;
         var v = pickVoice(); if(v) u.voice = v;
         u.onend = function(){ self.talkUntil = performance.now()/1000; };
