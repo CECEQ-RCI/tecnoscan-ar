@@ -766,6 +766,7 @@
   function hostOpen(code){
     gClear();
     G = {role:'host', code:code, base:db.ref('juegos/' + code), meta:null, jug:{}, resp:{}, preg:null, refs:[], revealing:false, qShown:-1, qr:false};
+    $('h-code').textContent = code;
     listen(G.base.child('meta'), function(s){ G.meta = s.val(); hostRender(); });
     listen(G.base.child('jug'), function(s){ G.jug = s.val() || {}; hostRender(); });
     listen(G.base.child('resp'), function(s){ G.resp = s.val() || {}; hostRender(); });
