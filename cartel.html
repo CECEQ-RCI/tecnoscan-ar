@@ -25,6 +25,10 @@
   #start p{font-family:'IBM Plex Sans','Segoe UI',sans-serif;font-size:14.5px;line-height:1.6;color:var(--dim);max-width:380px;margin:0;}
   #start .e{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
   .btn{font-family:'IBM Plex Mono',Consolas,monospace;font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;border-radius:12px;padding:15px 26px;border:0;cursor:pointer;background:var(--accent);color:#062420;box-shadow:0 0 24px rgba(77,232,212,.35);}
+  html{background:var(--bg);}
+  body{background:transparent;}
+  .foot span{white-space:nowrap;}
+  .foot .sound{white-space:nowrap;padding:8px 11px;}
   .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none;}
   #start .nota{font-size:12.5px;max-width:320px;}
   body.nocam{background:radial-gradient(ellipse at 50% 40%,rgba(77,232,212,.2),transparent 62%),var(--bg);}
@@ -53,7 +57,7 @@
   </div>
   <div class="status" id="status">Buscando cartel</div>
   <div class="hint" id="hint">Apunta la cámara al cartel del pabellón</div>
-  <div class="foot"><span>v4 · estable</span><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
+  <div class="foot"><span>v5 · fijo</span><button class="sound" id="btn-rescan" type="button" hidden>Escanear de nuevo</button><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
 </div>
 
 <a-scene mindar-image="imageTargetSrc: cartel.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; uiError: no; missTolerance: 6; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
@@ -86,7 +90,7 @@
   ];
   var ROBOT_X = 0.13, ROBOT_Y = -0.47, ROBOT_Z = 0.2, ROBOT_S = 0.46;
   var factIdx = -1, firstTime = true;
-  var muted = false, audioCtx = null, noCam = false, dragged = false, GRACE = 1.2;
+  var muted = false, audioCtx = null, noCam = false, dragged = false, GRACE = 1.2, locked = false, FOLLOW = /[?&]seguir/.test(location.search);
 
   /* ---------- sonido ---------- */
   function beep(freq, when, dur, vol){
@@ -163,7 +167,7 @@
       this._tp = new T.Vector3(); this._tq = new T.Quaternion(); this._ts = new T.Vector3();
       this._inv = new T.Matrix4(); this._m = new T.Matrix4();
       this.lostAt = 0;
-      obj.addEventListener('targetFound', function(){ self.onFound(); });
+      obj.addEventListener('targetFound', function(){ self.onFound(); if(!FOLLOW) lockInSpace(); });
       obj.addEventListener('targetLost', function(){ self.onLostSoft(); });
       window.addEventListener('click', function(e){
         if(self.active && !dragged && !e.target.closest('.sound,#start')) self.nextFact(true);
@@ -339,7 +343,7 @@
         if(performance.now()/1000 - this.lostAt > GRACE){ this.lostAt = 0; this.onLost(); return; }
         this.tgtObj.visible = true;
       }
-      if(!noCam) this.stabilize(dt);
+      if(!noCam && !locked) this.stabilize(dt);
       var t = performance.now()/1000, age = t - this.t0;
       this.root.scale.setScalar(Math.max(0.0001, ROBOT_S*easeOutBack(age/0.8)));
       if(!this.spoken && age > 1.0){ this.spoken = true; this.nextFact(false); }
@@ -366,7 +370,8 @@
   });
 
   /* ---------- arranque ---------- */
-  var NOCAM = {dist: 1.75, cx: -0.1, cy: 0, logoPlane: false};
+  var NOCAM = {dist: 1.75, cx: -0.1, cy: 0, logoPlane: false, w: 0.85, h: 1.05};
+  var poseScale = 1, poseDist = NOCAM.dist;
   var rotX = 0, rotY = 0, pivot = null, drag = null;
 
   function initAudio(){
@@ -377,10 +382,49 @@
   /* el contenido queda fijo al centro de la pantalla y gira alrededor de su centro */
   function applyPose(){
     var obj = document.getElementById('objetivo');
-    var eu = new T.Euler(rotX, rotY, 0);
+    var eu = new T.Euler(rotX, rotY, 0), k = poseScale;
     var c = new T.Vector3(NOCAM.cx, NOCAM.cy, 0.2).applyEuler(eu);
-    obj.object3D.position.set(-c.x, -c.y, -NOCAM.dist - c.z);
+    obj.object3D.position.set(-c.x*k, -c.y*k, -(poseDist + c.z)*k);
     obj.object3D.rotation.copy(eu);
+    obj.object3D.scale.set(k, k, k);
+  }
+
+  /* al detectar el cartel una vez, Nibble se queda fijo frente a la cámara (sin seguir el cartel, sin temblor) */
+  function lockInSpace(){
+    if(locked || noCam) return;
+    var sc = document.querySelector('a-scene'), obj = document.getElementById('objetivo');
+    var pp = new T.Vector3(), qq = new T.Quaternion(), ss = new T.Vector3();
+    obj.object3D.matrix.decompose(pp, qq, ss);
+    poseScale = ss.x > 1 ? ss.x : 816;
+    var cam = sc.querySelector('a-camera').getObject3D('camera');
+    var tn = Math.tan(cam.fov*Math.PI/360), asp = cam.aspect || 0.5;
+    poseDist = Math.max(NOCAM.w/(0.92*2*tn*asp), NOCAM.h/(0.62*2*tn));
+    try { sc.systems['mindar-image-system'].pause(true); } catch(e){}
+    locked = true;
+    var comp = document.getElementById('robot').components['robot-cecq'];
+    comp.sm.ok = false; comp.lostAt = 0;
+    var eo = comp.el.object3D;
+    eo.matrixAutoUpdate = true; eo.matrix.identity(); eo.position.set(0, 0, 0); eo.quaternion.identity(); eo.scale.set(1, 1, 1);
+    obj.object3D.matrixAutoUpdate = true; obj.object3D.visible = true;
+    rotX = 0; rotY = 0; applyPose();
+    document.getElementById('status').textContent = 'Nibble fijado';
+    document.getElementById('status').className = 'status ok';
+    var h = document.getElementById('hint');
+    h.textContent = 'Arrastra para girar a Nibble · toca para otro Tecnodato';
+    h.hidden = false;
+    document.getElementById('btn-rescan').hidden = false;
+    setTimeout(function(){ if(locked) h.hidden = true; }, 6000);
+  }
+
+  function rescan(){
+    if(!locked) return;
+    locked = false;
+    var sc = document.querySelector('a-scene'), obj = document.getElementById('objetivo');
+    var comp = document.getElementById('robot').components['robot-cecq'];
+    comp.lostAt = 0; comp.onLost(); comp.sm.ok = false;
+    obj.object3D.matrixAutoUpdate = false; obj.object3D.visible = false;
+    document.getElementById('btn-rescan').hidden = true;
+    try { sc.systems['mindar-image-system'].unpause(); } catch(e){}
   }
 
   function startNoCam(failed){
@@ -401,6 +445,7 @@
       lp.position.set(LOGO_X, LOGO_Y, 0);
       obj.object3D.add(lp);
     }
+    poseScale = 1; poseDist = NOCAM.dist;
     rotY = 0; rotX = 0; applyPose();
     var r = document.getElementById('robot').components['robot-cecq'];
     r.onFound();
@@ -414,7 +459,7 @@
   }
 
   window.addEventListener('pointerdown', function(e){
-    if(!noCam || (e.target.closest && e.target.closest('.sound,#start'))) return;
+    if(!(noCam || locked) || (e.target.closest && e.target.closest('.sound,#start'))) return;
     drag = {x: e.clientX, y: e.clientY, ry: rotY, rx: rotX}; dragged = false;
   });
   window.addEventListener('pointermove', function(e){
@@ -441,6 +486,7 @@
   });
   document.getElementById('btn-nocam').addEventListener('click', function(){ startNoCam(false); });
   document.getElementById('btn-cam').addEventListener('click', function(){ location.reload(); });
+  document.getElementById('btn-rescan').addEventListener('click', rescan);
   document.getElementById('btn-sound').addEventListener('click', function(){
     muted = !muted;
     this.textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
