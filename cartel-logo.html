@@ -53,10 +53,10 @@
   </div>
   <div class="status" id="status">Buscando cartel</div>
   <div class="hint" id="hint">Apunta la cámara al logo del cartel</div>
-  <div class="foot"><span>v3 · sin cámara</span><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
+  <div class="foot"><span>v4 · estable</span><button class="sound" id="btn-cam" type="button" hidden>Usar cámara</button><button class="sound" id="btn-sound" type="button">Sonido: sí</button></div>
 </div>
 
-<a-scene mindar-image="imageTargetSrc: cartel-logo.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; uiError: no; missTolerance: 4; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
+<a-scene mindar-image="imageTargetSrc: cartel-logo.mind; autoStart: false; maxTrack: 1; uiScanning: no; uiLoading: no; uiError: no; missTolerance: 6; warmupTolerance: 3; filterMinCF: 0.0001; filterBeta: 0.001;"
          color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
          vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
   <a-light type="ambient" intensity="1.15"></a-light>
@@ -86,7 +86,7 @@
   ];
   var LOGO_X = 0, LOGO_Y = -0.033, ROBOT_X = 0, ROBOT_Y = -0.2, ROBOT_Z = 0.2, ROBOT_S = 0.4;
   var factIdx = -1, firstTime = true;
-  var muted = false, audioCtx = null, noCam = false, dragged = false;
+  var muted = false, audioCtx = null, noCam = false, dragged = false, GRACE = 1.2;
 
   /* ---------- sonido ---------- */
   function beep(freq, when, dur, vol){
@@ -167,8 +167,13 @@
       this.bubbleText = null;
       this.build();
       var obj = document.getElementById('objetivo');
+      this.tgtObj = obj.object3D;
+      this.sm = {p:new T.Vector3(), q:new T.Quaternion(), s:new T.Vector3(1, 1, 1), ok:false};
+      this._tp = new T.Vector3(); this._tq = new T.Quaternion(); this._ts = new T.Vector3();
+      this._inv = new T.Matrix4(); this._m = new T.Matrix4();
+      this.lostAt = 0;
       obj.addEventListener('targetFound', function(){ self.onFound(); });
-      obj.addEventListener('targetLost', function(){ self.onLost(); });
+      obj.addEventListener('targetLost', function(){ self.onLostSoft(); });
       window.addEventListener('click', function(e){
         if(self.active && !dragged && !e.target.closest('.sound,#start')) self.nextFact(true);
       });
@@ -294,7 +299,39 @@
       } catch(e){}
     },
 
+    /* si el cartel se pierde unos instantes, el robot se queda en su última posición en lugar de parpadear */
+    onLostSoft: function(){
+      if(!this.active) return;
+      this.lostAt = performance.now()/1000;
+      this.tgtObj.visible = true;
+    },
+
+    /* suaviza la pose que entrega el seguimiento: quita el temblor y sigue rápido los movimientos reales */
+    stabilize: function(dt){
+      if(window.__stab === false) return;
+      var T0 = this.tgtObj.matrix, sm = this.sm;
+      T0.decompose(this._tp, this._tq, this._ts);
+      if(!(this._ts.x > 1e-6) || !isFinite(this._tp.x + this._tp.y + this._tp.z)) return;
+      if(!sm.ok){ sm.p.copy(this._tp); sm.q.copy(this._tq); sm.s.copy(this._ts); sm.ok = true; }
+      else {
+        var d = this._tp.distanceTo(sm.p) / this._ts.x, an = this._tq.angleTo(sm.q);
+        var tt = Math.max(Math.min(1, Math.max(0, (d - 0.02)/0.05)), Math.min(1, Math.max(0, (an - 0.04)/0.12)));
+        var a = 0.04 + 0.6*tt;
+        a = 1 - Math.pow(1 - a, Math.min(4, (dt || 16)/1000*60));
+        sm.p.lerp(this._tp, a); sm.q.slerp(this._tq, a); sm.s.lerp(this._ts, a);
+      }
+      this._m.compose(sm.p, sm.q, sm.s);
+      this._inv.copy(T0).invert();
+      var eo = this.el.object3D;
+      eo.matrixAutoUpdate = false;
+      eo.matrix.multiplyMatrices(this._inv, this._m);
+      eo.matrixWorldNeedsUpdate = true;
+    },
+
     onFound: function(){
+      var nowS = performance.now()/1000;
+      if(this.active && this.lostAt && nowS - this.lostAt < GRACE){ this.lostAt = 0; return; }
+      this.lostAt = 0; this.sm.ok = false;
       this.active = true; this.t0 = performance.now()/1000; this.spoken = false;
       document.getElementById('status').textContent = 'Cartel detectado';
       document.getElementById('status').className = 'status ok';
@@ -312,8 +349,13 @@
       document.getElementById('hint').hidden = false;
     },
 
-    tick: function(){
+    tick: function(time, dt){
       if(!this.active) return;
+      if(this.lostAt){
+        if(performance.now()/1000 - this.lostAt > GRACE){ this.lostAt = 0; this.onLost(); return; }
+        this.tgtObj.visible = true;
+      }
+      if(!noCam) this.stabilize(dt);
       var t = performance.now()/1000, age = t - this.t0;
       var e = Math.max(0, Math.min(1, age/1.1)), rise = 1 - Math.pow(1 - e, 3);
       this.root.scale.setScalar(Math.max(0.0001, ROBOT_S*easeOutBack(age/1.0)));
@@ -327,9 +369,9 @@
       var bs = this.bubbleText ? easeOutBack((age - 1.1)/0.5) : 0;
       this.bubble.scale.setScalar(Math.max(0.0001, bs));
 
-      this.rig.position.y = 0.4 + Math.sin(t*2)*0.025;
-      this.rig.rotation.y = Math.sin(t*0.9)*0.14 + (1 - rise)*Math.PI*2;
-      this.head.rotation.z = Math.sin(t*1.3)*0.05;
+      this.rig.position.y = 0.4 + Math.sin(t*2)*0.018;
+      this.rig.rotation.y = Math.sin(t*0.9)*0.09 + (1 - rise)*Math.PI*2;
+      this.head.rotation.z = Math.sin(t*1.3)*0.03;
       this.topper.material.emissiveIntensity = 0.45 + 0.4*Math.sin(t*4);
 
       var talking = t < this.talkUntil;
