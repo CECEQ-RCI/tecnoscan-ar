@@ -1333,7 +1333,7 @@
   resize();
 
   /* cambio automático entre las piezas: red neuronal → microchip → brazo robótico → … */
-  var AUTO_MS = 9000, AUTO_PAUSE = 14000, autoOn = true, autoActive = false, autoNext = 0, autoFrom = 0;
+  var AUTO_MS = 20000, AUTO_PAUSE = 25000, autoOn = true, autoActive = false, autoNext = 0, autoFrom = 0;
   function autoReset(ms){ autoFrom = performance.now(); autoNext = autoFrom + ms; }
   function autoTick(){
     var fill = document.getElementById('auto-fill');
