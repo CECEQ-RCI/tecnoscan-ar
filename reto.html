@@ -93,6 +93,8 @@
   .board .lv{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-left:6px;}
   .board .pts{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:500;}
   .empty{color:var(--text-dim);font-size:13px;margin:0;}
+  .board li > span:nth-child(2){min-width:0;overflow-wrap:anywhere;line-height:1.25;}
+  .jchips .chip{max-width:100%;overflow-wrap:anywhere;}
 
   /* juego */
   .hud{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;}
@@ -183,7 +185,7 @@
     <p class="lede">Tu equipo es una expedición STEM+: cada respuesta correcta desbloquea una insignia de los artefactos que viste en realidad aumentada. 10 preguntas de 20 segundos; entre más rápido aciertan, más puntos suman, y las rachas dan bonos.</p>
     <div class="panel">
       <label class="label" for="nick">Nombre de tu equipo</label>
-      <input type="text" id="nick" maxlength="14" autocomplete="off" placeholder="Ej. Los Exploradores">
+      <input type="text" id="nick" maxlength="40" autocomplete="off" placeholder="Ej. Los Exploradores o tu nombre completo">
       <div class="label">Elige tu nivel</div>
       <div class="levels" id="levels">
         <button type="button" class="level" data-lv="1" aria-pressed="true"><span class="shape" style="color:var(--c-b)">■</span><b>Creador</b><small>Media superior</small></button>
@@ -230,7 +232,7 @@
     <p class="lede">Cada equipo te muestra su certificado. Escribe su nombre y el código para registrar el puntaje: si no coinciden, el código no es válido.</p>
     <div class="panel">
       <label class="label" for="m-name">Nombre del equipo</label>
-      <input type="text" id="m-name" maxlength="14" autocomplete="off">
+      <input type="text" id="m-name" maxlength="40" autocomplete="off">
       <label class="label" for="m-code">Código del certificado</label>
       <input type="text" id="m-code" maxlength="12" autocomplete="off" placeholder="TS-0000-000">
       <button type="button" class="btn btn-primary" id="btn-reg">Registrar equipo</button>
@@ -254,7 +256,7 @@
       <label class="label" for="j-code">Código del juego</label>
       <input type="text" id="j-code" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000">
       <label class="label" for="j-name">Tu nombre</label>
-      <input type="text" id="j-name" maxlength="14" autocomplete="off" placeholder="Ej. Ana">
+      <input type="text" id="j-name" maxlength="40" autocomplete="off" placeholder="Ej. María Elena Martínez Hernández">
       <button type="button" class="btn btn-primary" id="btn-join">Entrar</button>
       <p class="msg" id="j-msg" hidden></p>
     </div>
@@ -887,7 +889,7 @@
   function jmsg(t){ var m = $('j-msg'); m.hidden = false; m.className = 'msg bad'; m.textContent = t; }
 
   function joinSubmit(){
-    var code = $('j-code').value.replace(/\D/g, '').slice(0, 4), name = $('j-name').value.trim().slice(0, 14);
+    var code = $('j-code').value.replace(/\D/g, '').slice(0, 4), name = $('j-name').value.trim().slice(0, 40);
     if(code.length !== 4 || !name){ jmsg('Escribe el código de 4 dígitos y tu nombre.'); return; }
     if(!fbInit()){ noConn(); return; }
     $('j-msg').hidden = true;

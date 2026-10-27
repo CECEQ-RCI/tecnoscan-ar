@@ -66,7 +66,7 @@
 
   function cert(d){
     var name = d.nombre;
-    var fs = name.length > 28 ? 54 : name.length > 18 ? 72 : 92;
+    var fs = name.length > 34 ? 44 : name.length > 26 ? 54 : name.length > 18 ? 72 : 92;
     var cols = [['NIVEL', d.nivel], ['PUNTAJE', String(d.puntaje)], ['FECHA', d.fecha]];
     var xs = [450, 825, 1200];
     var colSvg = cols.map(function(c, i){
@@ -104,7 +104,7 @@
   function slug(s){ return (s || 'equipo').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'equipo'; }
 
   var q = new URLSearchParams(location.search);
-  var name = (q.get('n') || '').trim().slice(0, 36);
+  var name = (q.get('n') || '').trim().slice(0, 40);
   var score = parseInt(q.get('p'), 10), lv = parseInt(q.get('v'), 10), ts = parseInt(q.get('f'), 36) * 1000;
   if(!name || isNaN(score) || isNaN(lv) || !ts){ document.getElementById('err').hidden = false; return; }
   document.getElementById('ok').hidden = false;
