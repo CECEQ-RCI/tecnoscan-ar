@@ -292,7 +292,12 @@
     max-width:340px;
   }
   [hidden]{display:none !important;}
-  body.single #btn-prev, body.single #btn-next, body.single #dots{display:none;}
+  body.single #btn-prev, body.single #btn-next, body.single #dots, body.single #btn-auto{display:none;}
+  .auto-btn{pointer-events:auto;align-self:center;margin-top:8px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);background:rgba(17,24,32,.85);border:1px solid var(--border);border-radius:999px;padding:7px 13px;cursor:pointer;}
+  .auto-btn[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);}
+  .auto-bar{align-self:center;width:120px;height:3px;border-radius:99px;background:rgba(143,163,184,.25);overflow:hidden;margin-top:8px;}
+  .auto-bar i{display:block;height:100%;width:100%;background:var(--accent);transform-origin:left;transform:scaleX(0);}
+  body.single .auto-bar{display:none;}
   .back-poster{pointer-events:auto;flex:none;font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--text);background:rgba(17,24,32,.85);border:1px solid var(--border);border-radius:999px;padding:8px 13px;white-space:nowrap;backdrop-filter:blur(8px);}
   .back-poster:hover{border-color:var(--accent);}
   .badge-nocam{
@@ -370,6 +375,8 @@
     <button class="nav-btn" id="btn-next" aria-label="Siguiente">›</button>
   </div>
   <div class="hint">Desliza sobre la pantalla para girar el holograma</div>
+  <div class="auto-bar" id="auto-bar" aria-hidden="true"><i id="auto-fill"></i></div>
+  <button class="auto-btn" id="btn-auto" type="button" aria-pressed="true">Cambio automático: sí</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1325,11 +1332,32 @@
   showTopic(0);
   resize();
 
+  /* cambio automático entre las piezas: red neuronal → microchip → brazo robótico → … */
+  var AUTO_MS = 9000, AUTO_PAUSE = 14000, autoOn = true, autoActive = false, autoNext = 0, autoFrom = 0;
+  function autoReset(ms){ autoFrom = performance.now(); autoNext = autoFrom + ms; }
+  function autoTick(){
+    var fill = document.getElementById('auto-fill');
+    if(!autoActive || !autoOn || TOPICS.length < 2){ fill.style.transform = 'scaleX(0)'; return; }
+    var now = performance.now();
+    if(dragging){ autoReset(AUTO_PAUSE); }
+    if(now >= autoNext){ showTopic((current + 1) % TOPICS.length); autoReset(AUTO_MS); now = autoFrom; }
+    fill.style.transform = 'scaleX(' + Math.max(0, Math.min(1, (now - autoFrom)/(autoNext - autoFrom))) + ')';
+  }
+  setInterval(autoTick, 120);
+  document.getElementById('btn-auto').addEventListener('click', function(){
+    autoOn = !autoOn;
+    this.setAttribute('aria-pressed', autoOn ? 'true' : 'false');
+    this.textContent = 'Cambio automático: ' + (autoOn ? 'sí' : 'no');
+    if(autoOn) autoReset(AUTO_MS);
+  });
+
   document.getElementById('btn-prev').addEventListener('click', function(){
     showTopic((current - 1 + TOPICS.length) % TOPICS.length);
+    autoReset(AUTO_PAUSE);
   });
   document.getElementById('btn-next').addEventListener('click', function(){
     showTopic((current + 1) % TOPICS.length);
+    autoReset(AUTO_PAUSE);
   });
 
   var dragging = false, lastX = 0, lastY = 0;
@@ -1459,6 +1487,7 @@
     veil.hidden = false;
     if(!withCamera){ badgeNoCam.hidden = false; document.getElementById('back-poster').hidden = false; }
     qrMode = !!withCamera && !!singleKey;
+    autoActive = !singleKey; autoReset(AUTO_MS + 1500);
     if(qrMode){
       qrHolder = new THREE.Group();
       scene.add(qrHolder);
